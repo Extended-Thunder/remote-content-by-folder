@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+     Copyright 2017 Jonathan Kamens. -->
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest">
+    <em:id>remote-content-by-folder@kamens.us</em:id>
+    <em:type>2</em:type>
+    <em:name>Remote Content By Folder</em:name>
+    <em:version>0.1</em:version>
+    <em:creator>Jonathan Kamens</em:creator>
+    <em:description>Decide whether to allow or block remote content in messages by comparing the names of the folders in which they are located to configured regular expressions.</em:description>
+    <em:homepageURL>https://addons.mozilla.org/en-US/thunderbird/addon/remote-content-by-folder</em:homepageURL>
+    <em:optionsURL>chrome://remote-content-by-folder/content/options.xul</em:optionsURL>
+    <em:targetApplication>
+      <Description>
+        <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id> <!-- Thunderbird -->
+        <em:minVersion>16.0</em:minVersion>
+        <em:maxVersion>57</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    <em:targetApplication>
+      <!-- SeaMonkey -->
+      <Description>
+        <em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
+        <em:minVersion>2.46</em:minVersion>
+        <em:maxVersion>2.54</em:maxVersion>
+      </Description>
+    </em:targetApplication>
+    <em:bootstrap>true</em:bootstrap>
+  </Description>
+</RDF>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this
+     file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+     Copyright 2017 Jonathan Kamens. -->
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<prefwindow
+    id="rcbf-prefwindow"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+    title="Reply to Multiple Messages Preferences">
+  <prefpane>
+    <preferences>
+      <preference
+          id="rcbf-allow-pref"
+          name="extensions.remote-content-by-folder.allow_regexp"
+          type="string"/>
+      <preference
+          id="rcbf-block-pref"
+          name="extensions.remote-content-by-folder.block_regexp"
+          type="string"/>
+      <preference
+          id="rcbf-block-first-pref"
+          name="extensions.remote-content-by-folder.block_first"
+          type="bool"/>
+    </preferences>
+    <vbox>
+      <hbox tooltiptext="Regular expression to match folder names in which remote content should be allowed automatically.">
+        <label value="Allow regexp:"/>
+        <textbox id="rcbf-allow-box" preference="rcbf-allow-pref"/>
+      </hbox>
+      <hbox tooltiptext="Regular expression to match folder names in which remote content should be blocked automatically.">
+        <label value="Block regexp:"/>
+        <textbox id="rcbf-block-box" preference="rcbf-block-pref"/>
+      </hbox>
+      <hbox tooltiptext="If unchecked, then order of regexp checking is allow then block. If checked, then order of regexp checking is block then allow.">
+        <checkbox preference="rcbf-block-first-pref"
+                  label="Check block regexp first"/>
+      </hbox>
+    </vbox>
+  </prefpane>
+</prefwindow>
+
