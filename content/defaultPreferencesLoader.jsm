@@ -90,13 +90,17 @@ DefaultPreferencesLoader.prototype = {
             break;
 
         case 'string':
-            /**
-             * Using setComplexValue instead of setCharPref because of
-             * unicode support
-             */
-            let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
-            str.data = value;
-            this.defaultBranch.setComplexValue(key, Ci.nsISupportsString, str);
+            try {
+                // Gecko 58+
+                this.defaultBranch.setStringPref(key, value);
+            }
+            catch (ex) {
+                let str = Cc["@mozilla.org/supports-string;1"].createInstance(
+                    Ci.nsISupportsString);
+                str.data = value;
+                this.defaultBranch.setComplexValue(
+                    key, Ci.nsISupportsString, str);
+            }
             break;
 
         default:
