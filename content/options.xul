@@ -8,7 +8,7 @@
 <prefwindow
     id="rcbf-prefwindow"
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-    title="Reply to Multiple Messages Preferences">
+    title="Remote Content By Folder Preferences">
   <prefpane>
     <preferences>
       <preference
