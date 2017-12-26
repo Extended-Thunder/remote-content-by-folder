@@ -9,11 +9,12 @@
     <em:id>remote-content-by-folder@kamens.us</em:id>
     <em:type>2</em:type>
     <em:name>Remote Content By Folder</em:name>
-    <em:version>0.3</em:version>
+    <em:version>0.4</em:version>
     <em:creator>Jonathan Kamens</em:creator>
     <em:description>Decide whether to allow or block remote content in messages by comparing the names of the folders in which they are located to configured regular expressions.</em:description>
     <em:homepageURL>https://addons.mozilla.org/en-US/thunderbird/addon/remote-content-by-folder</em:homepageURL>
     <em:optionsURL>chrome://remote-content-by-folder/content/options.xul</em:optionsURL>
+    <em:optionsType>3</em:optionsType>
     <em:targetApplication>
       <Description>
         <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id> <!-- Thunderbird -->
