@@ -6,39 +6,33 @@
      Copyright 2017 Jonathan Kamens. -->
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet type="text/css" href="chrome://messenger/skin/preferences/preferences.css"?>
-<prefwindow
+<!DOCTYPE dialog SYSTEM "chrome://editor/locale/EditorButtonProperties.dtd">
+
+<dialog
     id="rcbf-prefwindow"
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-    title="Remote Content By Folder Preferences">
+    title="Remote Content By Folder Preferences"
+    buttons="accept,cancel,extra1"
+    buttonlabelextra1="&reset.value;"
+    ondialogextra1="RCBFOptions.LoadPrefs();"
+    ondialogaccept="return RCBFOptions.ValidatePrefs();"
+    onbeforeunload="return RCBFOptions.ValidatePrefs() ? null : 'err';">
+  <script src="options.js"/>
   <prefpane>
-    <preferences>
-      <preference
-          id="rcbf-allow-pref"
-          name="extensions.remote-content-by-folder.allow_regexp"
-          type="string"/>
-      <preference
-          id="rcbf-block-pref"
-          name="extensions.remote-content-by-folder.block_regexp"
-          type="string"/>
-      <preference
-          id="rcbf-block-first-pref"
-          name="extensions.remote-content-by-folder.block_first"
-          type="bool"/>
-    </preferences>
     <vbox>
       <hbox tooltiptext="Regular expression to match folder names in which remote content should be allowed automatically.">
         <label value="Allow regexp:"/>
-        <textbox id="rcbf-allow-box" preference="rcbf-allow-pref"/>
+        <textbox id="rcbf-allow-box"/>
       </hbox>
       <hbox tooltiptext="Regular expression to match folder names in which remote content should be blocked automatically.">
         <label value="Block regexp:"/>
-        <textbox id="rcbf-block-box" preference="rcbf-block-pref"/>
+        <textbox id="rcbf-block-box"/>
       </hbox>
       <hbox tooltiptext="If unchecked, then order of regexp checking is allow then block. If checked, then order of regexp checking is block then allow.">
-        <checkbox preference="rcbf-block-first-pref"
+        <checkbox id="rcbf-block-first-pref"
                   label="Check block regexp first"/>
       </hbox>
     </vbox>
   </prefpane>
-</prefwindow>
+</dialog>
 

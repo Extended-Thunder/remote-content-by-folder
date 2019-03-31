@@ -1,7 +1,6 @@
 FILES := LICENSE README.md bootstrap.js chrome.manifest \
          content/defaultPreferencesLoader.jsm content/options.xul \
-         defaults/preferences/remote-content-by-folder.js \
-         install.rdf
+         content/prefs.js install.rdf
 
 all: remote-content-by-folder.xpi
 

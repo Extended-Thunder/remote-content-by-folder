@@ -8,8 +8,8 @@
 // Also, lots of code here cribbed from
 // https://developer.mozilla.org/en-US/Add-ons/How_to_convert_an_overlay_extension_to_restartless
 
-Components.utils.import("resource:///modules/gloda/log4moz.js");
-Components.utils.import("resource://gre/modules/Services.jsm");
+const {Log4Moz} = ChromeUtils.import("resource:///modules/gloda/log4moz.js");
+const {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
 
 // From nsMsgContentPolicy.cpp
 const kNoRemoteContentPolicy = 0, kBlockRemoteContent = 1,
@@ -21,9 +21,6 @@ prefPrefix = "extensions.remote-content-by-folder";
 allowPref = prefPrefix + ".allow_regexp";
 blockPref = prefPrefix + ".block_regexp";
 blockFirstPref = prefPrefix + ".block_first";
-
-defaultPreferencesLoaderLink =
-     "chrome://remote-content-by-folder/content/defaultPreferencesLoader.jsm";
 
 function checkRegexp(msgHdr, prefName, setValue) {
     var regexp = prefBranch.getCharPref(prefName);
@@ -108,7 +105,10 @@ function startup(data, reason) {
     ///   ADDON_INSTALL
     ///   ADDON_UPGRADE
     ///   ADDON_DOWNGRADE
-    loadDefaultPreferences(data.installPath);
+    var {DefaultPreferencesLoader} = ChromeUtils.import(
+        "chrome://remote-content-by-folder/content/defaultPreferencesLoader.jsm");
+    var loader = new DefaultPreferencesLoader();
+    loader.parseUri("chrome://remote-content-by-folder/content/prefs.js");
     initLogging();
     addNewMessageListener();
 }
@@ -161,18 +161,6 @@ function uninstall(data, reason) {
     ///   ADDON_UNINSTALL
     ///   ADDON_UPGRADE
     ///   ADDON_DOWNGRADE
-}
-
-function loadDefaultPreferences(installPath) {
-    Components.utils.import(defaultPreferencesLoaderLink);
-
-    this.defaultPreferencesLoader = new DefaultPreferencesLoader(installPath);
-    this.defaultPreferencesLoader.parseDirectory();
-}
-function unloadDefaultPreferences() {
-    this.defaultPreferencesLoader.clearDefaultPrefs();
-
-    Components.utils.unload(defaultPreferencesLoaderLink);
 }
 
 function initLogging() {
