@@ -1,10 +1,10 @@
 FILES := LICENSE README.md bootstrap.js chrome.manifest \
          content/defaultPreferencesLoader.jsm content/options.xul \
-         content/prefs.js install.rdf
+         content/options.js content/prefs.js install.rdf
 
 all: remote-content-by-folder.xpi
 
-remote-content-by-folder.xpi: $(FILES)
+remote-content-by-folder.xpi: Makefile $(FILES)
 	-rm -f $@.tmp
 	zip -r $@.tmp $^
 	mv -f $@.tmp $@
