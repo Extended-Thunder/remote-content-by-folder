@@ -14,10 +14,7 @@
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
     title="Remote Content By Folder Preferences"
     buttons="accept,cancel,extra1"
-    buttonlabelextra1="&reset.value;"
-    ondialogextra1="RCBFOptions.LoadPrefs();"
-    ondialogaccept="return RCBFOptions.ValidatePrefs();"
-    onbeforeunload="return RCBFOptions.ValidatePrefs() ? null : 'err';">
+    buttonlabelextra1="&reset.value;">
   <script src="chrome://global/content/globalOverlay.js"/>
   <script src="chrome://global/content/editMenuOverlay.js"/>
   <script src="options.js"/>
