@@ -1,6 +1,6 @@
 {
     "name": "Remote Content By Folder",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions.",
     "author": "Jonathan Kamens",
     "homepage_url": "https://addons.mozilla.org/en-US/thunderbird/addon/remote-content-by-folder",
