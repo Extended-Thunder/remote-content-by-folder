@@ -200,15 +200,5 @@ var WindowObserver = {
     },
 };
 
-var didKickstarter = false;
-
 function loadIntoWindow(window) {
-    if (! didKickstarter) {
-        didKickstarter = true;
-        var {KickstarterPopup} = ChromeUtils.import(
-            "chrome://remote-content-by-folder/content/kickstarter.jsm");
-        KickstarterPopup(
-            window,
-            "chrome://remote-content-by-folder/content/kickstarter.xul");
-    }
 }
