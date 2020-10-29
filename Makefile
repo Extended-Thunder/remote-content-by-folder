@@ -18,7 +18,7 @@ all: remote-content-by-folder.xpi
 
 remote-content-by-folder.xpi: Makefile $(FILES)
 	-rm -f $@.tmp
-	zip -r $@.tmp $^
+	zip -r $@.tmp $(FILES)
 	mv -f $@.tmp $@
 
 clean:
