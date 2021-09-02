@@ -78,6 +78,7 @@ function checkRegexp(msgHdr, prefName, setValue) {
         console.debug(prefName + " regexp \"" + regexp +
                      "\" didn't match folder name \"" + msgHdr.folder.name +
                      "\"");
+        return false;
     }
     console.debug(prefName + " is empty, not testing");
     return false;
