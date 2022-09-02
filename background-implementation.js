@@ -36,9 +36,8 @@ var rcmbf_bgrndAPI = class extends ExtensionCommon.ExtensionAPI {
         return {
             rcmbf_bgrndAPI: {
                 onLoad: function() {
-                    var {DefaultPreferencesLoader} = ChromeUtils.import(
-                        extension.rootURI.resolve(
-                            "/content/defaultPreferencesLoader.jsm"));
+                    var { DefaultPreferencesLoader } = ChromeUtils.import(
+                        "resource://rcbf_content/defaultPreferencesLoader.jsm");
                     var loader = new DefaultPreferencesLoader();
                     loader.parseUri(extension.rootURI.resolve(
                         "/content/prefs.js"));

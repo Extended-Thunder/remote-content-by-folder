@@ -26,6 +26,14 @@
                     "script":"background-implementation.js",
                     "paths":[["rcmbf_bgrndAPI"]]
                 }
+            },
+            "ResourceUrl": {
+                "schema": "api/ResourceUrl/schema.json",
+                "parent": {
+                    "scopes": [ "addon_parent" ],
+                    "paths": [[ "ResourceUrl" ]],
+                    "script": "api/ResourceUrl/implementation.js"
+                }
             }
         },
         "background":{
@@ -35,8 +43,8 @@
     "applications": {
         "gecko": {
             "id": "remote-content-by-folder@kamens.us",
-            "strict_min_version": "69.0a1",
-            "strict_max_version": "91.*"
+            "strict_min_version": "101.0a1",
+            "strict_max_version": "102.*"
         }
     },
     "icons": {

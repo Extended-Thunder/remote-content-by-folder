@@ -1,6 +1,8 @@
 FILES := \
 	LICENSE \
 	README.md \
+	api/ResourceUrl/implementation.js \
+	api/ResourceUrl/schema.json \
 	background-implementation.js \
 	background.js \
 	content/defaultPreferencesLoader.jsm \
