@@ -75,8 +75,8 @@ var RCBFOptions = {
             RCBFOptions.LoadPrefs();
         });
         btn_save.addEventListener("click", function(event) {
-            if (! RCBFOptions.ValidatePrefs())
-                event.preventDefault();
+            if (RCBFOptions.ValidatePrefs())
+                window.close();
         });
         RCBFOptions.LoadPrefs();
     },
