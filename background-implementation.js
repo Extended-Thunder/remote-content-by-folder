@@ -8,11 +8,8 @@
 // Also, lots of code here cribbed from
 // https://developer.mozilla.org/en-US/Add-ons/How_to_convert_an_overlay_extension_to_restartless
 
-var { ExtensionCommon } = ChromeUtils.import(
-    "resource://gre/modules/ExtensionCommon.jsm");
 var { ExtensionParent } = ChromeUtils.import(
     "resource://gre/modules/ExtensionParent.jsm");
-var {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
 var extension = ExtensionParent.GlobalManager.getExtension(
     "remote-content-by-folder@kamens.us");
 var { ExtensionSupport } = ChromeUtils.import(

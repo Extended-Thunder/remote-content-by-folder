@@ -1,8 +1,5 @@
-var { ExtensionCommon } =
-    ChromeUtils.import("resource://gre/modules/ExtensionCommon.jsm");
 var { ExtensionParent } =
     ChromeUtils.import("resource://gre/modules/ExtensionParent.jsm");
-var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
 var extension = ExtensionParent.GlobalManager.getExtension(
     "remote-content-by-folder@kamens.us");
 var { ExtensionSupport } =
