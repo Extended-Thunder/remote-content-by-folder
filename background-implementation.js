@@ -8,11 +8,15 @@
 // Also, lots of code here cribbed from
 // https://developer.mozilla.org/en-US/Add-ons/How_to_convert_an_overlay_extension_to_restartless
 
-var { ExtensionCommon } = ChromeUtils.import("resource://gre/modules/ExtensionCommon.jsm");
-var { ExtensionParent } = ChromeUtils.import("resource://gre/modules/ExtensionParent.jsm");
+var { ExtensionCommon } = ChromeUtils.import(
+    "resource://gre/modules/ExtensionCommon.jsm");
+var { ExtensionParent } = ChromeUtils.import(
+    "resource://gre/modules/ExtensionParent.jsm");
 var {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
-var extension = ExtensionParent.GlobalManager.getExtension("remote-content-by-folder@kamens.us");
-var { ExtensionSupport } = ChromeUtils.import("resource:///modules/ExtensionSupport.jsm");
+var extension = ExtensionParent.GlobalManager.getExtension(
+    "remote-content-by-folder@kamens.us");
+var { ExtensionSupport } = ChromeUtils.import(
+    "resource:///modules/ExtensionSupport.jsm");
 
 //const {Log4Moz} = ChromeUtils.import("resource:///modules/gloda/log4moz.js");
 
@@ -27,35 +31,27 @@ allowPref = prefPrefix + ".allow_regexp";
 blockPref = prefPrefix + ".block_regexp";
 blockFirstPref = prefPrefix + ".block_first";
 
-
-
-var rcmbf_bgrndAPI = class extends ExtensionCommon.ExtensionAPI
-{
-    getAPI(context)
-        {
-               return{
-                rcmbf_bgrndAPI:
-                            {
-                                onLoad: function()
-                                 {
-                                    var {DefaultPreferencesLoader} = ChromeUtils.import(extension.rootURI.resolve("/content/defaultPreferencesLoader.jsm"));
-                                    var loader = new DefaultPreferencesLoader();
-                                    loader.parseUri(extension.rootURI.resolve("/content/prefs.js"));
-                                    initLogging();
-                                    addNewMessageListener();
-                                    Services.obs.addObserver(WindowObserver, "mail-startup-done", false);
-                                    forEachOpenWindow(loadIntoWindow);
-                                }
-
-
-                            }
-                    };
-        }
+var rcmbf_bgrndAPI = class extends ExtensionCommon.ExtensionAPI {
+    getAPI(context) {
+        return {
+            rcmbf_bgrndAPI: {
+                onLoad: function() {
+                    var {DefaultPreferencesLoader} = ChromeUtils.import(
+                        extension.rootURI.resolve(
+                            "/content/defaultPreferencesLoader.jsm"));
+                    var loader = new DefaultPreferencesLoader();
+                    loader.parseUri(extension.rootURI.resolve(
+                        "/content/prefs.js"));
+                    initLogging();
+                    addNewMessageListener();
+                    Services.obs.addObserver(WindowObserver,
+                                             "mail-startup-done", false);
+                    forEachOpenWindow(loadIntoWindow);
+                }
+            }
+        };
+    }
 };
-
-
-
-
 
 function checkRegexp(msgHdr, prefName, setValue) {
     var regexp = prefBranch.getCharPref(prefName);
@@ -67,17 +63,17 @@ function checkRegexp(msgHdr, prefName, setValue) {
             console.error("Invalid regexp: \"" + regexp + "\"");
         }
         console.debug("Testing " + prefName + " regexp \"" + regexp +
-                     "\" against folder name \"" + msgHdr.folder.name + "\"");
+                      "\" against folder name \"" + msgHdr.folder.name + "\"");
         if (regexpObj.test(msgHdr.folder.name)) {
             console.debug(prefName + " regexp \"" + regexp +
-                         "\" matched folder name \"" + msgHdr.folder.name +
-                         "\"");
+                          "\" matched folder name \"" + msgHdr.folder.name +
+                          "\"");
             msgHdr.setUint32Property(contentPolicyProperty, setValue);
             return true;
         }
         console.debug(prefName + " regexp \"" + regexp +
-                     "\" didn't match folder name \"" + msgHdr.folder.name +
-                     "\"");
+                      "\" didn't match folder name \"" + msgHdr.folder.name +
+                      "\"");
         return false;
     }
     console.debug(prefName + " is empty, not testing");
@@ -95,8 +91,8 @@ newMessageListener = {
             var current = aMsgHdr.getUint32Property(contentPolicyProperty);
             if (current != kNoRemoteContentPolicy) {
                 console.debug("Property " + contentPolicyProperty +
-                             " on message " + aMsgHdr + " set to " + current +
-                             ", not modifying");
+                              " on message " + aMsgHdr + " set to " + current +
+                              ", not modifying");
                 return;
             }
         }
@@ -112,6 +108,7 @@ newMessageListener = {
                 return;
     }
 };
+
 function addNewMessageListener() {
     var notificationService = Components
         .classes["@mozilla.org/messenger/msgnotificationservice;1"]
@@ -120,6 +117,7 @@ function addNewMessageListener() {
     notificationService.addListener(newMessageListener,
                                     notificationService.msgAdded);
 };
+
 function removeNewMessageListener() {
     var notificationService = Components
         .classes["@mozilla.org/messenger/msgnotificationservice;1"]
@@ -130,13 +128,13 @@ function removeNewMessageListener() {
 
 function initLogging() {
     try {
-      //  delete Log4Moz.repository._loggers[prefPrefix];
+        //  delete Log4Moz.repository._loggers[prefPrefix];
     }
     catch (ex) {}
-   /* logger = Log4Moz.getConfiguredLogger(prefPrefix,
-                                         Log4Moz.Level.Trace,
-                                         Log4Moz.Level.Info,
-                                         Log4Moz.Level.Debug);  */
+    /* logger = Log4Moz.getConfiguredLogger(prefPrefix,
+       Log4Moz.Level.Trace,
+       Log4Moz.Level.Info,
+       Log4Moz.Level.Debug);  */
     observer = { observe: initLogging }
     Services.prefs.addObserver(prefPrefix + ".logging.console", observer,
                                false);
@@ -145,11 +143,11 @@ function initLogging() {
 }
 
 function forEachOpenWindow(todo) { // Apply a function to all open windows
-  for (let window of Services.wm.getEnumerator("mail:3pane")) {
-    if (window.document.readyState != "complete")
-      continue;
-    todo(window);
-  }
+    for (let window of Services.wm.getEnumerator("mail:3pane")) {
+        if (window.document.readyState != "complete")
+            continue;
+        todo(window);
+    }
 }
 
 var WindowObserver = {
