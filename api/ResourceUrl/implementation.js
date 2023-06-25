@@ -25,7 +25,6 @@
   var { ExtensionUtils } = ChromeUtils.import(
     "resource://gre/modules/ExtensionUtils.jsm"
   );
-  var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
   var { ExtensionError } = ExtensionUtils;
 
   let resourceUrls = new Set();

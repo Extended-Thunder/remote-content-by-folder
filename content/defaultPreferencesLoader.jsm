@@ -11,7 +11,9 @@
  */
 
 const { utils: Cu, classes: Cc, interfaces: Ci } = Components;
-const {Services} = ChromeUtils.import('resource://gre/modules/Services.jsm');
+const Services = globalThis.Services || ChromeUtils.import(
+  'resource://gre/modules/Services.jsm'
+).Services;
 
 var EXPORTED_SYMBOLS = ['DefaultPreferencesLoader'];
 
