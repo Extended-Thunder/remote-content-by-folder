@@ -1,7 +1,7 @@
-"Remote Content By Folder" Thunderbird / SeaMonkey add-on
+"Remote Content By Folder" Thunderbird add-on
 =========================================================
 
-This Thunderbird / SeaMonkey add-on tells Thunderbird whether or not to allow or block the display of remote content in messages added to folders (usually, but not always, newly received messages) by matching regular expressions specified by the user against the names of the folders containing the messages.
+This Thunderbird add-on tells Thunderbird whether or not to allow or block the display of remote content in messages added to folders (usually, but not always, newly received messages) by matching regular expressions specified by the user against the names of the folders containing the messages.
 
 The user can specify the regular expression whose matching folders allow remote content to display automatically and/or a separate regular expression whose matching folders block remote content automatically.
 

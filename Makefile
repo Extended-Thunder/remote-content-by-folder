@@ -1,19 +1,17 @@
 FILES := \
 	LICENSE \
 	README.md \
-	api/ResourceUrl/implementation.js \
-	api/ResourceUrl/schema.json \
-	background-implementation.js \
+	api/LegacyPrefs/implementation.js \
+	api/LegacyPrefs/schema.json \
+	api/LegacyPrefs/README.md \
+	api/RemoteContent/implementation.js \
+	api/RemoteContent/schema.json \
 	background.js \
-	content/defaultPreferencesLoader.jsm \
-	content/options-implementation.js \
-	content/options.html \
-	content/options.js \
-	content/prefs.js \
+	options.html \
+	options.js \
 	icon48.png \
 	icon96.png \
 	manifest.json \
-	schema.json \
 	$(nothing)
 
 all: remote-content-by-folder.xpi
