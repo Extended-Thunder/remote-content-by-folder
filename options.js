@@ -44,9 +44,9 @@ async function saveSettings() {
     window.close();
 }
 
-async function init() {
-    var btn_save = document.getElementById("btn_save");
-    var btn_cancel = document.getElementById("btn_cancel");
+function init() {
+    let btn_save = document.getElementById("btn_save");
+    let btn_cancel = document.getElementById("btn_cancel");
     btn_cancel.addEventListener("click", loadSettings);
     btn_save.addEventListener("click", saveSettings);
     loadSettings();
