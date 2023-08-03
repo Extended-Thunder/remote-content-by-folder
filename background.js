@@ -1,8 +1,10 @@
+const DEBUG = true;
 const PREF_PREFIX = "extensions.remote-content-by-folder.";
 
 const allowPref = "allow_regexp";
 const blockPref = "block_regexp";
 const blockFirstPref = "block_first";
+const allowOnlyTempPref = "allow_temporary_only";
 
 const PREF_DEFAULTS = {
     "logging.console": "Warn", // Unused
@@ -10,77 +12,88 @@ const PREF_DEFAULTS = {
     [allowPref]: "",
     [blockPref]: "",
     [blockFirstPref]: false,
+    [allowOnlyTempPref]: false,
 }
-let lastAllowedMessages = new Map();
+let allowedLog = new Map();
 
 function debug(msg) {
-    //console.log(msg);
-}
-
-// We want all messages to default to BLOCK, so we return them to BLOCK after a
-// timeout.
-function scheduleBlock(messageId) {
-    debug("Scheduling for returning to BLOCK later", messageId)
-    return window.setTimeout(() => {
-        debug("Returning to BLOCK", messageId);
-        lastAllowedMessages.delete(messageId);
-        browser.RemoteContent.setContentPolicy(messageId, "Block")
-    }, 20000);
+    if (DEBUG) {
+        console.log("RCBF:", msg);
+    }
 }
 
 async function init() {
-    // TODO: Migrate old LegacyPrefs to local storage.
+    // TODO: Migrate LegacyPrefs to local storage.
     let prefs = {};
     for (let [name, value] of Object.entries(PREF_DEFAULTS)) {
         await browser.LegacyPrefs.setDefaultPref(`${PREF_PREFIX}${name}`, value);
         prefs[name] = await browser.LegacyPrefs.getPref(`${PREF_PREFIX}${name}`);
     }
 
-    // If a message is displayed and the current policy does not match the expected
-    // policy, we update the policy and reload the message.
-    browser.messageDisplay.onMessageDisplayed.addListener(async (tab, message) => {
-        // If a message is in lastAllowedMessages, than it has been 
-        // - set to allow remote content recently
-        // - not yet been set back to block remote content
-        // The message is therefore intended to be viewed with remote content
-        // allowed and no action on the message should be taken here, except to
-        // delay the blocking set-back for anti-glitch measures.
-        let lastAllowedMessage = lastAllowedMessages.get(message.id);
-        if (lastAllowedMessage) {
-            window.clearTimeout(lastAllowedMessage.timeoutHandler);
-            lastAllowedMessage.timeoutHandler = scheduleBlock(message.id);
-            return;
+    // Check all already open messages.
+    let messageTabs = await browser.tabs.query().then(tabs => tabs.filter(t => ["mail", "messageDisplay"].includes(t.type)));
+    for (let messageTab of messageTabs) {
+        let message = await browser.messageDisplay.getDisplayedMessage(messageTab.id);
+        if (message) {
+            checkMessage(messageTab, message);
         }
+    }
 
-        let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
-        if (currentPolicy == "None") {
-            debug(`Property "${contentPolicyProperty}" on message "${message.id}" set to "${currentPolicy}", not modifying`);
-            return;
-        }
-
-        // Get newPolicy from settings.
-        let requestedPolicy = await getRequestedPolicy(message);
-
-        // Make sure we return to BLOCK after some time.
-        if (requestedPolicy == "Allow") {
-            lastAllowedMessages.set(message.id, {
-                tabId: tab.id,
-                timeoutHandler: scheduleBlock(message.id),
-            });
-        }
-
-        if (currentPolicy != requestedPolicy) {
-            debug(`Setting policy ${requestedPolicy}`);
-            await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
-            await browser.RemoteContent.reloadMessage(tab.id);
-        }
-    });
+    // Check any message being opened in the future.
+    browser.messageDisplay.onMessageDisplayed.addListener(checkMessage);
 }
-init();
 
-// Regex code
+// If a message is displayed and the current policy does not match the expected
+// policy, we update the policy and reload the message.
+async function checkMessage(tab, message) {
+    // If a message is in the allowed log, than it has been set to allow remote
+    // content recently. The message is therefore intended to be viewed with
+    // remote content allowed and no action on the message should be taken here,
+    // except to delay the removal from the log for anti-glitch measures.
+    let logEntry = allowedLog.get(message.id);
+    if (logEntry) {
+        window.clearTimeout(logEntry);
+        logEntry = scheduleRemovalFromAllowedLog(message.id);
+        return;
+    }
 
-async function getRequestedPolicy(message) {
+    let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
+    if (currentPolicy == "None") {
+        debug(`Property "${contentPolicyProperty}" on message "${message.id}" set to "${currentPolicy}", not modifying`);
+        return;
+    }
+
+    // Get newPolicy from regex match.
+    let requestedPolicy = await getPolicyFromRegExMatch(message);
+    if (currentPolicy != requestedPolicy) {
+        // Make sure to remove us from the allowed log after some time.
+        if (requestedPolicy == "Allow") {
+            allowedLog.set(message.id, scheduleRemovalFromAllowedLog(message.id));
+        }
+
+        debug(`Switching policy from "${currentPolicy}" to "${requestedPolicy}" for message "${message.id}"`);
+        await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
+        await browser.RemoteContent.reloadMessage(tab.id);
+    }
+};
+
+// Keep track of recently allowed messages, to avoid glitches of messages being
+// reloaded multiple times.
+function scheduleRemovalFromAllowedLog(messageId) {
+    debug(`Scheduling for being removed from the allowedLog later: ${messageId}`)
+    return window.setTimeout(async () => {
+        debug(`Removing from allowedLog: ${messageId}`);
+        allowedLog.delete(messageId);
+
+        let allowTemp = await browser.LegacyPrefs.getPref(`${PREF_PREFIX}${allowOnlyTempPref}`);
+        if (allowTemp) {
+            debug(`Returning message policy to BLOCK: ${messageId}`);
+            await browser.RemoteContent.setContentPolicy(messageId, "Block")
+        }
+    }, 10000);
+}
+
+async function getPolicyFromRegExMatch(message) {
     let blockFirst = await browser.LegacyPrefs.getPref(`${PREF_PREFIX}${blockFirstPref}`);
     if (blockFirst) {
         if (await checkRegexp(message, blockPref)) {
@@ -91,7 +104,7 @@ async function getRequestedPolicy(message) {
     if (await checkRegexp(message, allowPref)) {
         return "Allow";
     }
-    
+
     return "Block"
 
     // This is not needed, if we have not yet been allowed, we default to block.
@@ -123,3 +136,5 @@ async function checkRegexp(msgHdr, prefName) {
     debug(`${prefName} is empty, not testing`);
     return false;
 }
+
+init();

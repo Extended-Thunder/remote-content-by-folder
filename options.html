@@ -5,17 +5,34 @@
 <script src="options.js"></script>
 </head>
 <body>
-    <div>
-        <label id ="lbl_rcbf-allow-box">Allow regexp:</label>
-        <input type="text" id ="rcbf-allow-box"> <br>
-        <label id ="lbl_rcbf-allow-box">Block regexp:</label>
-        <input type="text" id ="rcbf-block-box"><br>
-        <label>Check block regexp first</label>
-        <input type="checkbox" id="rcbf-block-first-pref">
+    <h1>Options for the <i>Remote Content By Folder</i> Add-on</h1>
+    
+    <div style="margin:1ex;">
+        <div style="display:inline-grid; gap: 2px 1ex; grid-template-columns: minmax(auto, auto) 300px; ">
+            <label for="rcbf-allow-box">Allow regexp:</label>
+            <input type="text" id ="rcbf-allow-box">
+
+            <label for="rcbf-block-box">Block regexp:</label>
+            <input type="text" id ="rcbf-block-box">
+        </div>
+
+        <div>
+            <input type="checkbox" id="rcbf-block-first-pref">
+            <label for="rcbf-block-first-pref">Check block regexp first</label>
+        </div>
+        <div>
+            <input type="checkbox" id="rcbf-allow-temp-only">
+            <label for="rcbf-allow-temp-only">Apply allow policy only temporary</label>
+        </div>
     </div>
-    <div>
+    <div style="margin:1ex;">
         <button id ="btn_save">Save</button>
         <button id ="btn_cancel">Cancel</button>
     </div>
+    <h1>Regular Expression Examples</h1>
+    <ul>
+        <li>match everything: <b>.*</b></li>
+        <li>match a certain set of folder names: <b>^(Spam|Trash|Deleted (Items|Messages))$</b></li>
+    </ul>
 </body>
 </html>

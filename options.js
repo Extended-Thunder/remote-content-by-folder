@@ -3,6 +3,7 @@ const MAPPINGS = [
     ["rcbf-allow-box", "allow_regexp", "string"],
     ["rcbf-block-box", "block_regexp", "string"],
     ["rcbf-block-first-pref", "block_first", "bool"],
+    ["rcbf-allow-temp-only", "allow_temporary_only", "bool"],
 ];
 
 async function loadSettings() {
