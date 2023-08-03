@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 const PREF_PREFIX = "extensions.remote-content-by-folder.";
 
 const allowPref = "allow_regexp";
@@ -35,7 +35,7 @@ async function init() {
     for (let messageTab of messageTabs) {
         let message = await browser.messageDisplay.getDisplayedMessage(messageTab.id);
         if (message) {
-            checkMessage(messageTab, message);
+            await checkMessage(messageTab, message);
         }
     }
 
@@ -46,8 +46,8 @@ async function init() {
 // If a message is displayed and the current policy does not match the expected
 // policy, we update the policy and reload the message.
 async function checkMessage(tab, message) {
-    // If a message is in the allowed log, than it has been set to allow remote
-    // content recently. The message is therefore intended to be viewed with
+    // If a message is in the allowed log, than it has been changed recently to
+    // allow remote content. The message is therefore intended to be viewed with
     // remote content allowed and no action on the message should be taken here,
     // except to delay the removal from the log for anti-glitch measures.
     let logEntry = allowedLog.get(message.id);
