@@ -59,7 +59,7 @@ async function checkMessage(tab, message) {
 
     let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
     if (currentPolicy == "None") {
-        debug(`Property "${contentPolicyProperty}" on message "${message.id}" set to "${currentPolicy}", not modifying`);
+        debug(`Content policy for message "${message.id}" is set to "${currentPolicy}", not modifying`);
         return;
     }
 
@@ -71,7 +71,7 @@ async function checkMessage(tab, message) {
             allowedLog.set(message.id, scheduleRemovalFromAllowedLog(message.id));
         }
 
-        debug(`Switching policy from "${currentPolicy}" to "${requestedPolicy}" for message "${message.id}"`);
+        debug(`Switching content policy for message "${message.id}" from "${currentPolicy}" to "${requestedPolicy}"`);
         await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
         await browser.RemoteContent.reloadMessage(tab.id);
     }
@@ -87,7 +87,7 @@ function scheduleRemovalFromAllowedLog(messageId) {
 
         let allowTemp = await browser.LegacyPrefs.getPref(`${PREF_PREFIX}${allowOnlyTempPref}`);
         if (allowTemp) {
-            debug(`Returning message policy to BLOCK: ${messageId}`);
+            debug(`Resetting content policy for message "${messageId}" to "Block"`);
             await browser.RemoteContent.setContentPolicy(messageId, "Block")
         }
     }, 10000);
