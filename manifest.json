@@ -1,61 +1,45 @@
 {
-    "name": "Remote Content By Folder",
-    "version": "3.0",
-    "description": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions.",
-    "author": "Jonathan Kamens",
-    "homepage_url": "https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder",
-    "options_ui": {
-        "page": "options.html",
-        "open_in_tab": true
+  "name": "Remote Content By Folder",
+  "version": "3.0",
+  "description": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions.",
+  "author": "Jonathan Kamens",
+  "homepage_url": "https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder",
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "experiment_apis": {
+    "LegacyPrefs": {
+      "schema": "api/LegacyPrefs/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["LegacyPrefs"]],
+        "script": "api/LegacyPrefs/implementation.js"
+      }
     },
-    "experiment_apis": {
-        "LegacyPrefs": {
-            "schema": "api/LegacyPrefs/schema.json",
-            "parent": {
-                "scopes": [
-                    "addon_parent"
-                ],
-                "paths": [
-                    [
-                        "LegacyPrefs"
-                    ]
-                ],
-                "script": "api/LegacyPrefs/implementation.js"
-            }
-        },
-        "RemoteContent": {
-            "schema": "api/RemoteContent/schema.json",
-            "parent": {
-                "scopes": [
-                    "addon_parent"
-                ],
-                "paths": [
-                    [
-                        "RemoteContent"
-                    ]
-                ],
-                "script": "api/RemoteContent/implementation.js"
-            }
-        }
-    },
-    "background": {
-        "scripts": [
-            "background.js"
-        ]
-    },
-    "applications": {
-        "gecko": {
-            "id": "remote-content-by-folder@kamens.us",
-            "strict_min_version": "102.0",
-            "strict_max_version": "118.*"
-        }
-    },
-    "permissions": [
-        "messagesRead", "accountsRead"
-    ],
-    "icons": {
-        "48": "icon48.png",
-        "96": "icon96.png"
-    },
-    "manifest_version": 2
+    "RemoteContent": {
+      "schema": "api/RemoteContent/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["RemoteContent"]],
+        "script": "api/RemoteContent/implementation.js"
+      }
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "applications": {
+    "gecko": {
+      "id": "remote-content-by-folder@kamens.us",
+      "strict_min_version": "102.0",
+      "strict_max_version": "118.*"
+    }
+  },
+  "permissions": ["messagesRead", "accountsRead"],
+  "icons": {
+    "48": "icon48.png",
+    "96": "icon96.png"
+  },
+  "manifest_version": 2
 }

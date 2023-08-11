@@ -1,47 +1,47 @@
 [
-    {
-        "namespace": "RemoteContent",
-        "functions": [
-           {
-                "name": "getContentPolicy",
-                "type": "function",
-                "desription": "Get the policy of a specific message",
-                "async": true,
-                "parameters": [
-                    {
-                        "name": "messageId",
-                        "type": "integer"
-                    }
-                ]
-            },
-            {
-                "name": "setContentPolicy",
-                "type": "function",
-                "desription": "Set the policy of a specific message",
-                "async": true,
-                "parameters": [
-                    {
-                        "name": "messageId",
-                        "type": "integer"
-                    },
-                    {
-                        "name": "policy",
-                        "type": "string"
-                    }
-                ]
-            },
-            {
-                "name": "reloadMessage",
-                "type": "function",
-                "desription": "Reload message in the given tab",
-                "async": true,
-                "parameters": [
-                    {
-                        "name": "tabId",
-                        "type": "integer"
-                    }
-                ]
-            }
+  {
+    "namespace": "RemoteContent",
+    "functions": [
+      {
+        "name": "getContentPolicy",
+        "type": "function",
+        "desription": "Get the policy of a specific message",
+        "async": true,
+        "parameters": [
+          {
+            "name": "messageId",
+            "type": "integer"
+          }
         ]
-    }
+      },
+      {
+        "name": "setContentPolicy",
+        "type": "function",
+        "desription": "Set the policy of a specific message",
+        "async": true,
+        "parameters": [
+          {
+            "name": "messageId",
+            "type": "integer"
+          },
+          {
+            "name": "policy",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "reloadMessage",
+        "type": "function",
+        "desription": "Reload message in the given tab",
+        "async": true,
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          }
+        ]
+      }
+    ]
+  }
 ]
