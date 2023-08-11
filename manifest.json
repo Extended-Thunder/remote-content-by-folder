@@ -1,55 +1,45 @@
 {
-    "name": "Remote Content By Folder",
-    "version": "2.0.2",
-    "description": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions.",
-    "author": "Jonathan Kamens",
-    "homepage_url": "https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder",
-
-        "options_ui": {
-            "page": "/content/options.html",
-            "open_in_tab": true
-        },
-
-        "experiment_apis":{
-            "rcmbf_optAPI":{
-                "schema":"schema.json",
-                "parent":{
-                    "scopes":["addon_parent"],
-                    "script":"/content/options-implementation.js",
-                    "paths":[["rcmbf_optAPI"]]
-                }
-            },
-            "rcmbf_bgrndAPI":{
-                "schema":"schema.json",
-                "parent":{
-                    "scopes":["addon_parent"],
-                    "script":"background-implementation.js",
-                    "paths":[["rcmbf_bgrndAPI"]]
-                }
-            },
-            "ResourceUrl": {
-                "schema": "api/ResourceUrl/schema.json",
-                "parent": {
-                    "scopes": [ "addon_parent" ],
-                    "paths": [[ "ResourceUrl" ]],
-                    "script": "api/ResourceUrl/implementation.js"
-                }
-            }
-        },
-        "background":{
-            "scripts":["background.js"]
-        },
-
-    "applications": {
-        "gecko": {
-            "id": "remote-content-by-folder@kamens.us",
-            "strict_min_version": "101.0a1",
-            "strict_max_version": "102.*"
-        }
+  "name": "Remote Content By Folder",
+  "version": "3.0",
+  "description": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions.",
+  "author": "Jonathan Kamens",
+  "homepage_url": "https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder",
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "experiment_apis": {
+    "LegacyPrefs": {
+      "schema": "api/LegacyPrefs/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["LegacyPrefs"]],
+        "script": "api/LegacyPrefs/implementation.js"
+      }
     },
-    "icons": {
-        "48": "icon48.png",
-        "96": "icon96.png"
-    },
-    "manifest_version": 2
+    "RemoteContent": {
+      "schema": "api/RemoteContent/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["RemoteContent"]],
+        "script": "api/RemoteContent/implementation.js"
+      }
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "applications": {
+    "gecko": {
+      "id": "remote-content-by-folder@kamens.us",
+      "strict_min_version": "102.0",
+      "strict_max_version": "118.*"
+    }
+  },
+  "permissions": ["messagesRead", "accountsRead"],
+  "icons": {
+    "48": "icon48.png",
+    "96": "icon96.png"
+  },
+  "manifest_version": 2
 }
