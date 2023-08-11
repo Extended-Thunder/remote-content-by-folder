@@ -65,7 +65,7 @@ async function checkMessage(tab, message) {
 
     // Get newPolicy from regex match.
     let requestedPolicy = await getPolicyFromRegExMatch(message);
-    if (currentPolicy != requestedPolicy) {
+    if (requestedPolicy && currentPolicy != requestedPolicy) {
         // Make sure to remove us from the allowed log after some time.
         if (requestedPolicy == "Allow") {
             allowedLog.set(message.id, scheduleRemovalFromAllowedLog(message.id));
@@ -105,14 +105,13 @@ async function getPolicyFromRegExMatch(message) {
         return "Allow";
     }
 
-    return "Block"
-
-    // This is not needed, if we have not yet been allowed, we default to block.
     if (!blockFirst) {
         if (await checkRegexp(message, blockPref)) {
             return "Block";
         }
     }
+
+    return undefined;
 }
 
 async function checkRegexp(msgHdr, prefName) {
