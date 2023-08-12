@@ -28,11 +28,11 @@ message based on what folder the message arrives in.
 Here's are some examples configurations (configurations for the add-on are
 added in its add-on preferences):
 
->```
->Allow regexp: <strong>.*</strong>  
->Block regexp: <strong>^(Spam|Trash|Deleted (Items|Messages))$</strong>  
->Check block regexp first: <strong>yes</strong>  
->```
+> ```
+> Allow regexp: <strong>.*</strong>
+> Block regexp: <strong>^(Spam|Trash|Deleted (Items|Messages))$</strong>
+> Check block regexp first: <strong>yes</strong>
+> ```
 
 In [extended regular expressions][regexps], the kind used here, a period
 matches any single character, "`*`" after anything means to match zero or more
@@ -49,14 +49,14 @@ folder names are not empty).
 Generally speaking, to list any arbitrary set of folder names in the "Allow
 regexp" or "Block regexp" setting, do the following:
 
-* Start with "`^`" to indicate the beginning of the string.
-* Next put "`(`" to begin the list of folder names.
-* List the folder names separated by "`|`", but put a backslash ("`\`") in front
+- Start with "`^`" to indicate the beginning of the string.
+- Next put "`(`" to begin the list of folder names.
+- List the folder names separated by "`|`", but put a backslash ("`\`") in front
   of any symbol in a folder name, to ensure that it isn't treated as a special
   regexp character.
-* End with "`)$`" to mark the end of the list of folder names and the end of the
+- End with "`)$`" to mark the end of the list of folder names and the end of the
   string being matched..
- 
+
 Note that the settings you specify for Remote Content By Folder are only
 applied when the message first arrives. If you change the settings Thunderbird
 won't go back and re-evaluate whether to display images for existing messages,
