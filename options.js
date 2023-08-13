@@ -70,3 +70,10 @@ function init() {
 }
 
 window.addEventListener("load", init, false);
+window.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    i18n.updateDocument();
+  },
+  { once: true },
+);

@@ -9,9 +9,11 @@ FILES := \
 	background.js \
 	options.html \
 	options.js \
+	i18n.js \
 	icon48.png \
 	icon96.png \
 	manifest.json \
+	$(wildcard _locales/*/messages.json) \
 	$(nothing)
 
 all: remote-content-by-folder.xpi
