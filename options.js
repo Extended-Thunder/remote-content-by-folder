@@ -55,11 +55,17 @@ async function saveSettings() {
   window.close();
 }
 
+async function cancelSettings() {
+  window.close();
+}
+
 function init() {
   let btn_save = document.getElementById("btn_save");
+  let btn_reset = document.getElementById("btn_reset");
   let btn_cancel = document.getElementById("btn_cancel");
-  btn_cancel.addEventListener("click", loadSettings);
   btn_save.addEventListener("click", saveSettings);
+  btn_reset.addEventListener("click", loadSettings);
+  btn_cancel.addEventListener("click", cancelSettings);
   loadSettings();
 }
 
