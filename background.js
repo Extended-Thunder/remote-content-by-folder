@@ -50,7 +50,7 @@ async function checkMessage(message) {
   let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
   if (currentPolicy != "None") {
     await debug(
-      `Content policy for message "${message.id}" is set to "${currentPolicy}", not modifying`,
+      `Content policy for message ${message.id} ("${message.subject}") is set to "${currentPolicy}", not modifying`,
     );
     return;
   }
@@ -59,7 +59,7 @@ async function checkMessage(message) {
   let requestedPolicy = await getPolicyFromRegExMatch(message);
   if (requestedPolicy && currentPolicy != requestedPolicy) {
     await debug(
-      `Switching content policy for message "${message.id}" from "${currentPolicy}" to "${requestedPolicy}"`,
+      `Switching content policy for message ${message.id} ("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
   }
