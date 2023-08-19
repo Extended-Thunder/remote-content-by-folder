@@ -3,12 +3,14 @@ const PREF_PREFIX = "extensions.remote-content-by-folder.";
 const debugPref = "debug";
 const allowPref = "allow_regexp";
 const blockPref = "block_regexp";
+const scanPref = "scan_regexp";
 const blockFirstPref = "block_first";
 
 const PREF_DEFAULTS = {
   [debugPref]: false,
   [allowPref]: "",
   [blockPref]: "",
+  [scanPref]: "",
   [blockFirstPref]: false,
 };
 
@@ -30,6 +32,10 @@ async function debug(msg) {
   }
 }
 
+function error(...args) {
+  console.error("RCBF:", ...args);
+}
+
 async function init() {
   // TODO: Migrate LegacyPrefs to local storage.
   let prefs = {};
@@ -38,6 +44,50 @@ async function init() {
   }
 
   messenger.messages.onNewMailReceived.addListener(checkNewMessages);
+  await scanFolders();
+}
+
+async function scanFolders() {
+  let scanRegexp = await getPref(scanPref);
+  if (!scanRegexp) {
+    return;
+  }
+  let regexp;
+  try {
+    regexp = new RegExp(scanRegexp);
+  } catch (ex) {
+    error(`Invalid scan regexp: "${scanRegexp}"`);
+    return;
+  }
+
+  let accounts = await messenger.accounts.list();
+  for (let account of accounts) {
+    for (let folder of account.folders) {
+      if (regexp.test(folder.name)) {
+        let numScanned = 0;
+        let numChanged = 0;
+        debug(`Scanning for new messages in ${account.name}/${folder.name}`);
+        let page = await messenger.messages.list(folder);
+        while (true) {
+          for (let message of page.messages) {
+            numScanned += 1;
+            let changed = await checkMessage(message, true);
+            if (changed) {
+              numChanged += 1;
+            }
+          }
+          if (!page.id) {
+            break;
+          }
+          page = await messenger.messages.continueList(page.id);
+        }
+        debug(
+          `Scanned ${numScanned} messages in ${account.name}/` +
+            `${folder.name}, changed ${numChanged}`,
+        );
+      }
+    }
+  }
 }
 
 async function checkNewMessages(folder, messages) {
@@ -46,13 +96,16 @@ async function checkNewMessages(folder, messages) {
   }
 }
 
-async function checkMessage(message) {
+async function checkMessage(message, scanning) {
   let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
   if (currentPolicy != "None") {
-    await debug(
-      `Content policy for message ${message.id} ("${message.subject}") is set to "${currentPolicy}", not modifying`,
-    );
-    return;
+    if (!scanning) {
+      await debug(
+        `Content policy for message ${message.id} ("${message.subject}") is ` +
+          `set to "${currentPolicy}", not modifying`,
+      );
+    }
+    return false;
   }
 
   // Get newPolicy from regex match.
@@ -62,7 +115,9 @@ async function checkMessage(message) {
       `Switching content policy for message ${message.id} ("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
+    return requestedPolicy;
   }
+  return false;
 }
 
 async function getPolicyFromRegExMatch(message) {
@@ -105,7 +160,7 @@ async function checkRegexp(msgHdr, prefName) {
       );
       return false;
     } catch (ex) {
-      console.error(`Invalid regexp: "${regexp}"`);
+      error(`Invalid regexp: "${regexp}"`);
       return false;
     }
   }

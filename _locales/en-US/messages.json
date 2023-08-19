@@ -5,11 +5,32 @@
   "appDesc": {
     "message": "Decide whether to allow or block remote content in messages by comparing their folder names to regular expressions."
   },
+  "settingHeading": {
+    "message": "Setting"
+  },
+  "valueHeading": {
+    "message": "Value"
+  },
+  "descriptionHeading": {
+    "message": "Description"
+  },
   "allowRegexp": {
     "message": "Allow regexp"
   },
+  "allowDescription": {
+    "message": "Regexp matching folder names in which remote content is allowed"
+  },
   "blockRegexp": {
     "message": "Block regexp"
+  },
+  "blockDescription": {
+    "message": "Regexp matching folder names in which remote content should be blocked"
+  },
+  "scanRegexp": {
+    "message": "Regexp for folders to scan on startup"
+  },
+  "scanDescription": {
+    "message": "Regexp matching names of folders that should be scanned for new messages on startup"
   },
   "checkBlockFirst": {
     "message": "Check block regexp first"

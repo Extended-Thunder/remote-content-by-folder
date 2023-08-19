@@ -14,14 +14,24 @@
         style="
           display: inline-grid;
           gap: 2px 1ex;
-          grid-template-columns: minmax(auto, auto) 300px;
+          grid-template-columns: minmax(auto, auto) 300px minmax(auto, auto);
         "
       >
+        <u>__MSG_settingHeading__</u>
+        <u>__MSG_valueHeading__</u>
+        <u>__MSG_descriptionHeading__</u>
+
         <label for="rcbf-allow-box">__MSG_allowRegexp__:</label>
-        <input type="text" id="rcbf-allow-box" />
+        <textarea id="rcbf-allow-box"></textarea>
+        <span>__MSG_allowDescription__</span>
 
         <label for="rcbf-block-box">__MSG_blockRegexp__:</label>
-        <input type="text" id="rcbf-block-box" />
+        <textarea id="rcbf-block-box"></textarea>
+        <span>__MSG_blockDescription__</span>
+
+        <label for="rcbf-scan-box">__MSG_scanRegexp__:</label>
+        <textarea id="rcbf-scan-box"></textarea>
+        <span>__MSG_scanDescription__</span>
       </div>
 
       <div>

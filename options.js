@@ -2,6 +2,7 @@ const PREF_PREFIX = "extensions.remote-content-by-folder.";
 const MAPPINGS = [
   ["rcbf-allow-box", "allow_regexp", "string"],
   ["rcbf-block-box", "block_regexp", "string"],
+  ["rcbf-scan-box", "scan_regexp", "string"],
   ["rcbf-block-first-pref", "block_first", "bool"],
   ["rcbf-debug", "debug", "bool"],
 ];
