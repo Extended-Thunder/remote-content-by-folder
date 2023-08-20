@@ -6,6 +6,12 @@ The user can specify the regular expression whose matching folders allow remote 
 
 By default, the "allow" regexp is checked first, then the "block" regexp, and if neither matches, the add-on does nothing. There is a checkbox in the preferences which can be checked to reverse the order of the checks.
 
+The user can also specify a regular expression matching folder names which
+should be scanned for new messages on startup, most commonly "^Inbox$". This is
+necessary because sometimes Thunderbird starts fetching new messages on startup
+before it has initialized all add-ons, and Remote Content By Folder isn't told
+by Thunderbird to check messages that were fetched before it was initialized.
+
 [home page][github] | [addons.thunderbird.net][atn] | [bug reports][issues] |
 [email support][email]
 
@@ -31,6 +37,7 @@ added in its add-on preferences):
 > ```
 > Allow regexp: <strong>.*</strong>
 > Block regexp: <strong>^(Spam|Trash|Deleted (Items|Messages))$</strong>
+> Regexp for folders to scan on startup: <strong>^Inbox$</strong>
 > Check block regexp first: <strong>yes</strong>
 > ```
 
