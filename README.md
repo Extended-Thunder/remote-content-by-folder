@@ -12,8 +12,14 @@ necessary because sometimes Thunderbird starts fetching new messages on startup
 before it has initialized all add-ons, and Remote Content By Folder isn't told
 by Thunderbird to check messages that were fetched before it was initialized.
 
+Development and maintenance of this add-on is financially supported by Extended
+Thunder Inc. Please consider supporting Extended Thunder with a
+[recurring][subscribe] or [one-time][donate] donation. Your donation is
+tax-deductible in the united states as permitted by law.
+
 [home page][github] | [addons.thunderbird.net][atn] | [bug reports][issues] |
-[email support][email]
+[email support][email] | [recurring donation][subscribe] | [one-time
+donation][donate]
 
 ## Detailed usage instructions
 
@@ -89,3 +95,5 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 [atn]: https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder/
 [email]: mailto:jik@extended-thunder.org
 [issues]: https://github.com/Extended-Thunder/remote-content-by-folder/issues
+[subscribe]: https://liberapay.com/ExtendedThunder
+[donate]: https://paypal.me/ExtendedThunder
