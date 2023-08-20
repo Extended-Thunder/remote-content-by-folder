@@ -41,10 +41,10 @@ Here's are some examples configurations (configurations for the add-on are
 added in its add-on preferences):
 
 > ```
-> Allow regexp: <strong>.*</strong>  
-> Block regexp: <strong>^(Spam|Trash|Deleted (Items|Messages))$</strong>  
-> Regexp for folders to scan on startup: <strong>^Inbox$</strong>  
-> Check block regexp first: <strong>yes</strong>  
+> Allow regexp: .*  
+> Block regexp: ^(Spam|Trash|Deleted (Items|Messages))$  
+> Regexp for folders to scan on startup: ^Inbox$  
+> Check block regexp first: yes  
 > ```
 
 In [extended regular expressions][regexps], the kind used here, a period
