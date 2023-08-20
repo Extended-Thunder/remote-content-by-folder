@@ -93,7 +93,7 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 [regexps]: https://www.oreilly.com/ideas/an-introduction-to-regular-expressions
 [github]: https://github.com/Extended-Thunder/remote-content-by-folder
 [atn]: https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder/
-[email]: mailto:jik@extended-thunder.org
+[email]: mailto:jik+rcbf@extended-thunder.org
 [issues]: https://github.com/Extended-Thunder/remote-content-by-folder/issues
 [subscribe]: https://liberapay.com/ExtendedThunder
 [donate]: https://paypal.me/ExtendedThunder
