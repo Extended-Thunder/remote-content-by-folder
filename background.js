@@ -14,6 +14,9 @@ const PREF_DEFAULTS = {
   [blockFirstPref]: false,
 };
 
+var scanTimer;
+var scannedIds = [];
+
 async function getPref(name) {
   let fullName = PREF_PREFIX + name;
   return await browser.LegacyPrefs.getPref(fullName);
@@ -70,6 +73,10 @@ async function scanFolders() {
         let page = await messenger.messages.list(folder);
         while (true) {
           for (let message of page.messages) {
+            if (scannedIds.includes(message.id)) {
+              continue;
+            }
+            scannedIds.push(message.id);
             numScanned += 1;
             let changed = await checkMessage(message, true);
             if (changed) {
@@ -81,16 +88,35 @@ async function scanFolders() {
           }
           page = await messenger.messages.continueList(page.id);
         }
-        debug(
-          `Scanned ${numScanned} messages in ${account.name}/` +
-            `${folder.name}, changed ${numChanged}`,
-        );
+        if (
+          !scanTimer || // first time
+          numScanned
+        ) {
+          debug(
+            `Scanned ${numScanned} messages in ${account.name}/` +
+              `${folder.name}, changed ${numChanged}`,
+          );
+        }
       }
     }
   }
+  // There is some sort of timing issue here. Even though I'm adding the
+  // `scanFolders` call after adding the event listener, I'm not getting
+  // notified about all newly received messages. In attempt to work around
+  // this, I'm going to scan folders every five seconds until the first time my
+  // listener is called. I _hope_ that once my listener is called the first
+  // time it will be called reliably from that point forward, but who knows. I
+  // guess we'll find out.
+  scanTimer = setTimeout(scanFolders, 5000);
 }
 
 async function checkNewMessages(folder, messages) {
+  if (scanTimer) {
+    debug("Clearing scan timer");
+    clearTimeout(scanTimer);
+    scanTimer = null;
+    scannedIds = null;
+  }
   for (let message of messages.messages) {
     await checkMessage(message);
   }
