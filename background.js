@@ -73,6 +73,12 @@ async function scanFolders() {
         let page = await messenger.messages.list(folder);
         while (true) {
           for (let message of page.messages) {
+            if (!scannedIds) {
+              // If it's null then the checkNewMessages listener was called
+              // while we were scanning.
+              debug("Aborting scan");
+              break;
+            }
             if (scannedIds.includes(message.id)) {
               continue;
             }
@@ -107,7 +113,11 @@ async function scanFolders() {
   // listener is called. I _hope_ that once my listener is called the first
   // time it will be called reliably from that point forward, but who knows. I
   // guess we'll find out.
-  scanTimer = setTimeout(scanFolders, 5000);
+  if (scannedIds) {
+    // If it's null then the checkNewMessages listener was called while we
+    // were scanning.
+    scanTimer = setTimeout(scanFolders, 5000);
+  }
 }
 
 async function checkNewMessages(folder, messages) {
