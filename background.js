@@ -22,7 +22,7 @@ async function getPref(name) {
   return await browser.LegacyPrefs.getPref(fullName);
 }
 
-async function debug(msg) {
+async function debug(...args) {
   let debug;
   try {
     debug = await getPref(debugPref);
@@ -31,7 +31,7 @@ async function debug(msg) {
     debug = true;
   }
   if (debug) {
-    console.log("RCBF:", msg);
+    console.log("RCBF:", ...args);
   }
 }
 
@@ -127,6 +127,7 @@ async function checkNewMessages(folder, messages) {
     scanTimer = null;
     scannedIds = null;
   }
+  debug("checkNewMessages received:", messages.messages);
   for (let message of messages.messages) {
     await checkMessage(message);
   }
