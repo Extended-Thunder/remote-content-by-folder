@@ -120,6 +120,14 @@ async function scanFolders() {
   }
 }
 
+function restartScanning() {
+  if (!scannedIds) {
+    debug("Restarting scanning");
+    scannedIds = [];
+    scanFolders();
+  }
+}
+
 async function checkNewMessages(folder, messages) {
   if (scanTimer) {
     debug("Clearing scan timer");
@@ -207,3 +215,7 @@ async function checkRegexp(msgHdr, prefName) {
 }
 
 init();
+
+// New theory: NewMailReceived events don't work properly when transitioning
+// from offline to online, so resume scanning whenever we go online.
+window.addEventListener("online", (event) => restartScanning());
