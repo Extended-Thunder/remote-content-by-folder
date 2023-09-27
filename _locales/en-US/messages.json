@@ -27,10 +27,10 @@
     "message": "Regexp matching folder names in which remote content should be blocked"
   },
   "scanRegexp": {
-    "message": "Regexp for folders to scan on startup"
+    "message": "Regexp for folders to scan periodically"
   },
   "scanDescription": {
-    "message": "Regexp matching names of folders that should be scanned for new messages on startup"
+    "message": "Regexp matching names of folders that should be scanned for new messages periodically"
   },
   "checkBlockFirst": {
     "message": "Check block regexp first"
