@@ -249,7 +249,8 @@ async function checkMessage(message, scanning) {
   let requestedPolicy = await getPolicyFromRegExMatch(message);
   if (requestedPolicy && currentPolicy != requestedPolicy) {
     await debug(
-      `Switching content policy for message ${message.id} ("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
+      `Switching content policy for message ${message.id} `,
+      `("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
     return requestedPolicy;
@@ -284,16 +285,19 @@ async function checkRegexp(msgHdr, prefName) {
     try {
       let regexpObj = new RegExp(regexp);
       await debug(
-        `Testing ${prefName} regexp "${regexp}" against folder name "${msgHdr.folder.name}"`,
+        `Testing ${prefName} regexp "${regexp}" against folder name `,
+        `"${msgHdr.folder.name}"`,
       );
       if (regexpObj.test(msgHdr.folder.name)) {
         await debug(
-          `${prefName} regexp "${regexp}" matched folder name "${msgHdr.folder.name}"`,
+          `${prefName} regexp "${regexp}" matched folder name `,
+          `"${msgHdr.folder.name}"`,
         );
         return true;
       }
       await debug(
-        `${prefName} regexp "${regexp}" did not match folder name "${msgHdr.folder.name}"`,
+        `${prefName} regexp "${regexp}" did not match folder name `,
+        `"${msgHdr.folder.name}"`,
       );
       return false;
     } catch (ex) {
