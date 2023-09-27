@@ -150,7 +150,7 @@ async function scanFoldersBody(reason) {
     try {
       scanRegexp = new RegExp(scanRegexp);
     } catch (ex) {
-      error(`Invalid scan regexp: "${scanRegexp}"`);
+      await error(`Invalid scan regexp: "${scanRegexp}"`);
       return;
     }
   }
@@ -167,7 +167,9 @@ async function scanFoldersBody(reason) {
         continue;
       let numScanned = 0;
       let numChanged = 0;
-      debug(`Scanning for new messages in ${account.name}/${folder.name}`);
+      await debug(
+        `Scanning for new messages in ${account.name}/${folder.name}`,
+      );
       let page = await messenger.messages.list(folder);
       while (true) {
         for (let message of page.messages) {
@@ -176,14 +178,14 @@ async function scanFoldersBody(reason) {
           numScanned += 1;
           sawNewMessage = true;
           if (await checkMessage(message, true)) {
-            debug(`Changed message in ${reason} scan`);
+            await debug(`Changed message in ${reason} scan`);
             numChanged++;
           }
         }
         if (!page.id) break;
         page = await messenger.messages.continueList(page.id);
       }
-      debug(
+      await debug(
         `Scanned ${numScanned} messages in ${account.name}/` +
           `${folder.name}, changed ${numChanged}`,
       );
@@ -193,12 +195,12 @@ async function scanFoldersBody(reason) {
 }
 
 async function scanFolders(reason) {
-  debug(`scanFolders(${reason})`);
+  await debug(`scanFolders(${reason})`);
   let result;
   try {
     result = await scanFoldersBody(reason);
   } catch (ex) {
-    error("Scan error:", ex);
+    await error("Scan error:", ex);
   }
   scanRunning = false;
   // We should always see at least one new message when we were told to scan
@@ -221,12 +223,12 @@ async function scanFolders(reason) {
 async function checkNewMessages(folder, messages) {
   folderString = `${folder.accountId}/${folder.name}`;
   if (folderIsInList(folder, scanFoldersOnDeck)) {
-    debug(
+    await debug(
       `checkNewMessages: Folder ${folderString} already in queue, `,
       "not queuing again",
     );
   } else {
-    debug(`checkNewMessages: Adding folder ${folderString} to queue`);
+    await debug(`checkNewMessages: Adding folder ${folderString} to queue`);
     scanFoldersOnDeck.push(folder);
   }
 
@@ -301,7 +303,7 @@ async function checkRegexp(msgHdr, prefName) {
       );
       return false;
     } catch (ex) {
-      error(`Invalid regexp: "${regexp}"`);
+      await error(`Invalid regexp: "${regexp}"`);
       return false;
     }
   }
