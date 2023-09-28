@@ -94,17 +94,17 @@ async function init() {
     await browser.LegacyPrefs.setDefaultPref(`${PREF_PREFIX}${name}`, value);
   }
 
-  window.addEventListener("online", (event) => triggerScan(5000, "online"));
+  window.addEventListener("online", (event) => triggerScan("online", 5000));
   messenger.messages.onNewMailReceived.addListener(checkNewMessages);
-  scanTimer = setTimeout(() => triggerScan(undefined, "initial"), 1);
+  scanTimer = setTimeout(() => triggerScan("initial"), 1);
 }
 
-function triggerScan(timeout, reason) {
+function triggerScan(reason, timeout) {
   // JavaScript is single-threaded, friends, and this function is synchronous,
   // so only one of them can be running at a time. Therefore we don't need to
   // worry about locking here, i.e., when this function is running, it's the
   // only thing that's thinking about starting a scan.
-  debug("triggerScan()");
+  debug(`triggerScan(${reason}, ${timeout})`);
   let newScanDeadline = Date.now() + (timeout || 0);
   if (timeout && newScanDeadline > scanDeadline) {
     debug("triggerScan: next scan is too soon, ignoring trigger");
@@ -115,7 +115,7 @@ function triggerScan(timeout, reason) {
     debug(`triggerScan: scheduling scan for ${delta}ms in the future`);
     scanDeadline = newScanDeadline;
     clearTimeout(scanTimer);
-    scanTimer = setTimeout(triggerScan, delta);
+    scanTimer = setTimeout(() => triggerScan(reason), delta);
     return;
   }
   if (scanRunning) {
@@ -125,13 +125,13 @@ function triggerScan(timeout, reason) {
     );
     scanDeadline = Date.now() + 5000;
     clearTimeout(scanTimer);
-    scanTimer = setTimeout(triggerScan, 5000);
+    scanTimer = setTimeout(() => triggerScan("delayed"), 5000);
     return;
   }
   debug("triggerScan: scanning now and queuing next scan for 60s from now");
   scanDeadline = Date.now() + 60000;
   clearTimeout(scanTimer);
-  scanTimer = setTimeout(triggerScan, 60000);
+  scanTimer = setTimeout(() => triggerScan("periodic"), 60000);
   scanFoldersNow = scanFoldersOnDeck;
   scanFoldersOnDeck = [];
   scanRunning = true;
@@ -177,7 +177,7 @@ async function scanFoldersBody(reason) {
           maxMessageId = message.id;
           numScanned += 1;
           sawNewMessage = true;
-          if (await checkMessage(message, true)) {
+          if (await checkMessage(message)) {
             await debug(`Changed message in ${reason} scan`);
             numChanged++;
           }
@@ -217,7 +217,7 @@ async function scanFolders(reason) {
 
   // Having said all that, we do want to keep scanning until there are no new
   // messages for us to look at.
-  if (result) triggerScan(undefined, "rescan after found new messages");
+  if (result) triggerScan("rescan after found new messages");
 }
 
 async function checkNewMessages(folder, messages) {
@@ -232,18 +232,16 @@ async function checkNewMessages(folder, messages) {
     scanFoldersOnDeck.push(folder);
   }
 
-  triggerScan(undefined, "NewMailReceived");
+  triggerScan("NewMailReceived");
 }
 
-async function checkMessage(message, scanning) {
+async function checkMessage(message) {
   let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
   if (currentPolicy != "None") {
-    if (!scanning) {
-      await debug(
-        `Content policy for message ${message.id} ("${message.subject}") is ` +
-          `set to "${currentPolicy}", not modifying`,
-      );
-    }
+    await debug(
+      `Content policy for message ${message.id} ("${message.subject}") is ` +
+        `set to "${currentPolicy}", not modifying`,
+    );
     return false;
   }
 
