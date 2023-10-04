@@ -23,9 +23,8 @@
 //   settle and then trigger a scan.
 //
 // * We scan folders at least every 60 seconds, including the two scan triggers
-//   triggers mentioned above in that calculation (i.e., when we trigger an
-//   out-of-cycle scan, the next timed scan happens 60 seconds after that scan
-//   began).
+//   mentioned above in that calculation (i.e., when we trigger an out-of-cycle
+//   scan, the next timed scan happens 60 seconds after that scan began).
 //
 // * When scanning folders, we repeat the scan consecutively until we do a full
 //   scan without finding any new messages to process.
