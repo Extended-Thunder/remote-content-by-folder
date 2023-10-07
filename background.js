@@ -160,9 +160,7 @@ async function scanFoldersBody(reason) {
         continue;
       let numScanned = 0;
       let numChanged = 0;
-      await debug(
-        `Scanning for new messages in ${account.name}/${folder.name}`,
-      );
+      await debug(`Scanning for new messages in ${account.name}${folder.path}`);
       let page = await messenger.messages.list(folder);
       while (true) {
         for (let message of page.messages) {
@@ -178,8 +176,8 @@ async function scanFoldersBody(reason) {
         page = await messenger.messages.continueList(page.id);
       }
       await debug(
-        `Scanned ${numScanned} messages in ${account.name}/` +
-          `${folder.name}, changed ${numChanged}`,
+        `Scanned ${numScanned} messages in ${account.name}` +
+          `${folder.path}, changed ${numChanged}`,
       );
     }
   }
@@ -215,7 +213,7 @@ async function scanFolders(reason) {
 }
 
 async function checkNewMessages(folder, messages) {
-  folderString = `${folder.accountId}/${folder.name}`;
+  folderString = `${folder.accountId}${folder.path}`;
   if (folderIsInList(folder, scanFoldersOnDeck)) {
     await debug(
       `checkNewMessages: Folder ${folderString} already in queue, `,
