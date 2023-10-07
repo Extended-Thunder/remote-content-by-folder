@@ -53,12 +53,6 @@ var scanRunning = false;
 // for maintaining the timer.
 var scanTimer;
 var scanDeadline;
-// message IDs in the API are just numbers that increase monotonically. Each
-// time the backend API needs to share a message with an extension it assigns a
-// new number to that message. Therefore, to recognize and ignore messages
-// we've already seen all we need to do is keep track of the maximum message ID
-// we've seen.
-var maxMessageId = 0;
 // When we get a NewMailReceived event we add folders to this scanFoldersOnDeck.
 // Before triggerScan starts a scan, it moves them to scanFoldersNow.
 var scanFoldersOnDeck = [];
@@ -172,8 +166,7 @@ async function scanFoldersBody(reason) {
       let page = await messenger.messages.list(folder);
       while (true) {
         for (let message of page.messages) {
-          if (message.id <= maxMessageId) continue;
-          maxMessageId = message.id;
+          if (seenMessage(message.id)) continue;
           numScanned += 1;
           sawNewMessage = true;
           if (await checkMessage(message)) {
@@ -201,6 +194,8 @@ async function scanFolders(reason) {
   } catch (ex) {
     await error("Scan error:", ex);
   }
+  // === false here so we don't do this if there was an error.
+  if (result === false) resetSeenBaseline();
   scanRunning = false;
   // We should always see at least one new message when we were told to scan
   // specific folders, so if we didn't, should we try again?
@@ -307,6 +302,29 @@ async function checkRegexp(msgHdr, prefName) {
 
   await debug(`${prefName} is empty, not testing`);
   return false;
+}
+
+// message IDs in the API are just numbers that increase monotonically. Each
+// time the backend API needs to share a message with an extension it assigns a
+// new number to that message. Unfortunately, for some resaon the backend
+// sometimes skip IDs, i.e., we can't assume that every ID will be sent to us
+// eventually. We don't want to store an ever-increasing list of IDs we've
+// seen, so we keep a baseline and only worry about IDs above it. Each time we
+// complete a scan without seeing any new messages we reset the baseline.
+var baselineMessageId = 0;
+var seenMessageIds = {};
+
+function seenMessage(id) {
+  if (id <= baselineMessageId) return true;
+  if (seenMessageIds[id]) return true;
+  seenMessageIds[id] = true;
+  return false;
+}
+
+function resetSeenBaseline() {
+  debug("resetSeenBaseline");
+  baselineMessageId = Math.max(...Object.keys(seenMessageIds));
+  seenMessageIds = {};
 }
 
 init();
