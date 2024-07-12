@@ -58,6 +58,55 @@ var scanDeadline;
 var scanFoldersOnDeck = [];
 var scanFoldersNow = [];
 
+var thunderbirdVersion = false;
+
+async function tbIsVersion(wantVersion, yes, no) {
+  if (typeof wantVersion == "number") {
+    wantVersion = [wantVersion];
+  }
+
+  if (!thunderbirdVersion) {
+    let browserInfo = await messenger.runtime.getBrowserInfo();
+    thunderbirdVersion = browserInfo.version.split(".").map(parseInt);
+  }
+
+  let tbVersion = [...thunderbirdVersion];
+  let satisfied = true;
+  while (wantVersion.length) {
+    let wantFirst = wantVersion.shift();
+    let tbFirst = tbVersion.shift();
+    if (wantFirst > tbFirst) {
+      satisfied = false;
+      break;
+    }
+    if (wantFirst < tbFirst) {
+      break;
+    }
+  }
+
+  if (satisfied) {
+    if (yes) {
+      if (typeof yes == "function") {
+        return yes();
+      } else {
+        return yes;
+      }
+    }
+  } else {
+    if (no) {
+      if (typeof no == "function") {
+        return no();
+      } else {
+        return no;
+      }
+    }
+  }
+}
+
+async function tb128(yes, no) {
+  return await tbIsVersion(128, yes, no);
+}
+
 async function getPref(name) {
   let fullName = PREF_PREFIX + name;
   return await browser.LegacyPrefs.getPref(fullName);
@@ -161,7 +210,12 @@ async function scanFoldersBody(reason) {
       let numScanned = 0;
       let numChanged = 0;
       await debug(`Scanning for new messages in ${account.name}${folder.path}`);
-      let page = await messenger.messages.list(folder);
+      let page = await messenger.messages.list(
+        await tb128(
+          () => folder.id,
+          () => folder,
+        ),
+      );
       while (true) {
         for (let message of page.messages) {
           if (seenMessage(message.id)) continue;
