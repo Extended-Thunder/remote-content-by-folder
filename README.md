@@ -12,10 +12,7 @@ necessary because sometimes Thunderbird starts fetching new messages on startup
 before it has initialized all add-ons, and Remote Content By Folder isn't told
 by Thunderbird to check messages that were fetched before it was initialized.
 
-Development and maintenance of this add-on is financially supported by Extended
-Thunder Inc. Please consider supporting Extended Thunder with a
-[recurring][subscribe] or [one-time][donate] donation. Your donation is
-tax-deductible in the united states as permitted by law.
+You can support continued development and maintenance of this add-on via [Liberapay][Liberapay] or [Patreon][Patreon] for recurring donations or [Paypal][Paypal] or [Venmo][Venmo] for one-time donations.
 
 [home page][github] | [addons.thunderbird.net][atn] | [bug reports][issues] |
 [email support][email] | [recurring donation][subscribe] | [one-time
@@ -84,6 +81,8 @@ folder that Remote Content By Folder thinks images should be blocked in.
 
 ## Copyright
 
+Copyright 2024 Jonathan Kamens.
+
 Copyright 2023 Extended Thunder Inc.
 
 ## License
@@ -95,5 +94,7 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 [atn]: https://addons.thunderbird.net/thunderbird/addon/remote-content-by-folder/
 [email]: mailto:jik+rcbf@extended-thunder.org
 [issues]: https://github.com/Extended-Thunder/remote-content-by-folder/issues
-[subscribe]: https://liberapay.com/ExtendedThunder
-[donate]: https://paypal.me/ExtendedThunder
+[Liberapay]: https://liberapay.com/jik
+[Patreon]: https://www.patreon.com/c/jikseclecticofferings
+[Paypal]: https://paypal.me/JonathanKamens
+[Venmo]: https://venmo.com/Jonathan-Kamens
