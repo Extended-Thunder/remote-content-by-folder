@@ -34,7 +34,7 @@
     "gecko": {
       "id": "remote-content-by-folder@kamens.us",
       "strict_min_version": "102.0",
-      "strict_max_version": "131.*"
+      "strict_max_version": "134.*"
     }
   },
   "permissions": ["messagesRead", "accountsRead"],
