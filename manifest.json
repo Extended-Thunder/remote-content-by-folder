@@ -33,8 +33,8 @@
   "applications": {
     "gecko": {
       "id": "remote-content-by-folder@kamens.us",
-      "strict_min_version": "102.0",
-      "strict_max_version": "134.*"
+      "strict_min_version": "126.0",
+      "strict_max_version": "135.*"
     }
   },
   "permissions": ["messagesRead", "accountsRead"],

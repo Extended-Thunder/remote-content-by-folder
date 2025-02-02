@@ -36,28 +36,25 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-var { ExtensionCommon } = ChromeUtils.import(
-  "resource://gre/modules/ExtensionCommon.jsm"
+var { ExtensionCommon } = ChromeUtils.importESModule(
+  "resource://gre/modules/ExtensionCommon.sys.mjs",
 );
-var { ExtensionUtils } = ChromeUtils.import(
-  "resource://gre/modules/ExtensionUtils.jsm"
+var { ExtensionUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/ExtensionUtils.sys.mjs",
 );
 var { ExtensionError } = ExtensionUtils;
 
-var Services = globalThis.Services || 
-  ChromeUtils.import("resource://gre/modules/Services.jsm").Services;
-
+var Services = globalThis.Services;
 
 var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
   getAPI(context) {
-
     class LegacyPrefsManager {
       constructor() {
         this.observedBranches = new Map();
         this.QueryInterface = ChromeUtils.generateQI([
           "nsIObserver",
           "nsISupportsWeakReference",
-        ])
+        ]);
       }
 
       addObservedBranch(branch, fire) {
@@ -74,11 +71,11 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
 
       async observe(aSubject, aTopic, aData) {
         if (aTopic == "nsPref:changed") {
-          let branch = [...this.observedBranches.keys()]
-            .reduce(
-              (p, c) => aData.startsWith(c) && (!p || c.length > p.length) ? c : p,
-              null
-            );
+          let branch = [...this.observedBranches.keys()].reduce(
+            (p, c) =>
+              aData.startsWith(c) && (!p || c.length > p.length) ? c : p,
+            null,
+          );
           if (branch) {
             let name = aData.substr(branch.length);
             let value = await this.getLegacyPref(aData);
@@ -88,11 +85,7 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
         }
       }
 
-      async getLegacyPref(
-        aName,
-        aFallback = null,
-        userPrefOnly = true
-      ) {
+      async getLegacyPref(aName, aFallback = null, userPrefOnly = true) {
         let prefType = Services.prefs.getPrefType(aName);
         if (prefType == Services.prefs.PREF_INVALID) {
           return aFallback;
@@ -115,7 +108,7 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
 
             default:
               console.error(
-                `Legacy preference <${aName}> has an unknown type of <${prefType}>.`
+                `Legacy preference <${aName}> has an unknown type of <${prefType}>.`,
               );
           }
         }
@@ -132,7 +125,9 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
           name: "LegacyPrefs.onChanged",
           register: (fire, branch) => {
             if (legacyPrefsManager.hasObservedBranch(branch)) {
-              throw new ExtensionError(`Cannot add more than one listener for branch "${branch}".`)
+              throw new ExtensionError(
+                `Cannot add more than one listener for branch "${branch}".`,
+              );
             }
             legacyPrefsManager.addObservedBranch(branch, fire.sync);
             Services.prefs
@@ -155,7 +150,11 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
         // returns the default value, if no user defined value exists,
         // and returns the fallback value, if the preference does not exist
         getPref: async function (aName, aFallback = null) {
-          return await legacyPrefsManager.getLegacyPref(aName, aFallback, false);
+          return await legacyPrefsManager.getLegacyPref(
+            aName,
+            aFallback,
+            false,
+          );
         },
 
         clearUserPref: function (aName) {
@@ -167,7 +166,7 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
           let prefType = Services.prefs.getPrefType(aName);
           if (prefType == Services.prefs.PREF_INVALID) {
             console.error(
-              `Unknown legacy preference <${aName}>, forgot to declare a default?.`
+              `Unknown legacy preference <${aName}>, forgot to declare a default?.`,
             );
             return false;
           }
@@ -190,7 +189,7 @@ var LegacyPrefs = class extends ExtensionCommon.ExtensionAPI {
 
             default:
               console.error(
-                `Legacy preference <${aName}> has an unknown type of <${prefType}>.`
+                `Legacy preference <${aName}> has an unknown type of <${prefType}>.`,
               );
           }
           return false;
