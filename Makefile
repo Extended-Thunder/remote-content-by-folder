@@ -3,7 +3,6 @@ FILES := \
 	README.md \
 	api/LegacyPrefs/implementation.js \
 	api/LegacyPrefs/schema.json \
-	api/LegacyPrefs/README.md \
 	api/RemoteContent/implementation.js \
 	api/RemoteContent/schema.json \
 	background.js \
