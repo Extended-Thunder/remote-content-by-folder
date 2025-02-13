@@ -5,6 +5,8 @@ FILES := \
 	api/LegacyPrefs/schema.json \
 	api/RemoteContent/implementation.js \
 	api/RemoteContent/schema.json \
+	api/ex_messages/implementation.js \
+	api/ex_messages/schema.json \
 	background.js \
 	options.html \
 	options.js \
