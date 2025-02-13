@@ -1,0 +1,31 @@
+[
+  {
+    "namespace": "ex_messages",
+    "events": [
+      {
+        "name": "onNewMailReceived",
+        "type": "function",
+        "description": "Fired when a new message is received, and has been through junk classification and message filters.",
+        "permissions": ["accountsRead"],
+        "parameters": [
+          {
+            "name": "folder",
+            "$ref": "folders.MailFolder"
+          },
+          {
+            "name": "messages",
+            "$ref": "messages.MessageList"
+          }
+        ],
+        "extraParameters": [
+          {
+            "name": "monitorAllFolders",
+            "description": "Monitor all folders (including all special use folders as defined by $(ref:folders.MailFolderSpecialUse)) instead of just inbox folders and normal folders.",
+            "type": "boolean",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  }
+]
