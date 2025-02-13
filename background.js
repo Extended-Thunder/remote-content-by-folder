@@ -1,34 +1,3 @@
-// Finding all of the messages that we need to check is complicated, for two
-// reasons:
-//
-// 1 The messenger.messages.onNewMailReceived listener doesn't tell us about
-//   messages in all folders. It seems, for example, to ignore "special"
-//   folders like Sent Items on purpose (see
-//   https://bugzilla.mozilla.org/show_bug.cgi?id=1848787 ).
-//
-// 2 Even in the folders that the listener is supposed to notify about, it
-//   misses messages. See https://bugzilla.mozilla.org/show_bug.cgi?id=1850289
-//   . I have two guesses about what's making it unreliable: offline -> online
-//   transitions, and not all messages that arrive at the same time being
-//   included in notifications. But honestly these are just guesses.
-//
-// To try to do the right thing given these constraints, we use these
-// strategies:
-//
-// * When we get a NewMailReceived event, we trigger a scan that includes not
-//   just the folders that match the scan regexp but also all the folder the
-//   notification is for.
-//
-// * When we receive an online event, we wait a few seconds for the dust to
-//   settle and then trigger a scan.
-//
-// * We scan folders at least every 60 seconds, including the two scan triggers
-//   mentioned above in that calculation (i.e., when we trigger an out-of-cycle
-//   scan, the next timed scan happens 60 seconds after that scan began).
-//
-// * When scanning folders, we repeat the scan consecutively until we do a full
-//   scan without finding any new messages to process.
-
 const PREF_PREFIX = "extensions.remote-content-by-folder.";
 
 const debugPref = "debug";
@@ -46,19 +15,6 @@ const PREF_DEFAULTS = {
   [blockFirstPref]: false,
   [debugLevelPref]: "1",
 };
-
-// True when scan is running, false otherwise.
-// triggerScan is responsible for setting this to true; scan Folders is
-// responsible for setting it to false when it's done scanning.
-var scanRunning = false;
-// We reset this when there's an out-of-cycle scan. triggerScan is responsible
-// for maintaining the timer.
-var scanTimer;
-var scanDeadline;
-// When we get a NewMailReceived event we add folders to this scanFoldersOnDeck.
-// Before triggerScan starts a scan, it moves them to scanFoldersNow.
-var scanFoldersOnDeck = [];
-var scanFoldersNow = [];
 
 var thunderbirdVersion = false;
 
@@ -141,66 +97,13 @@ async function init() {
     await browser.LegacyPrefs.setDefaultPref(`${PREF_PREFIX}${name}`, value);
   }
 
-  window.addEventListener("online", (event) => triggerScan("online", 5000));
-  messenger.messages.onNewMailReceived.addListener(checkNewMessages);
-  scanTimer = setTimeout(() => triggerScan("initial"), 1);
-}
-
-function triggerScan(reason, timeout) {
-  // JavaScript is single-threaded, friends, and this function is synchronous,
-  // so only one of them can be running at a time. Therefore we don't need to
-  // worry about locking here, i.e., when this function is running, it's the
-  // only thing that's thinking about starting a scan.
-  debug(1, `triggerScan(${reason}, ${timeout})`);
-  let newScanDeadline = Date.now() + (timeout || 0);
-  if (timeout && newScanDeadline > scanDeadline) {
-    debug(1, "triggerScan: next scan is too soon, ignoring trigger");
-    return;
-  }
-  if (newScanDeadline > Date.now()) {
-    delta = newScanDeadline - Date.now();
-    debug(1, `triggerScan: scheduling scan for ${delta}ms in the future`);
-    scanDeadline = newScanDeadline;
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(() => triggerScan(reason), delta);
-    return;
-  }
-  if (scanRunning) {
-    debug(
-      1,
-      "triggerScan: scan time arrived while scan still running, ",
-      "postponing for 5s",
-    );
-    scanDeadline = Date.now() + 5000;
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(() => triggerScan("delayed"), 5000);
-    return;
-  }
-  debug(1, "triggerScan: scanning now and queuing next scan for 60s from now");
-  scanDeadline = Date.now() + 60000;
-  clearTimeout(scanTimer);
-  scanTimer = setTimeout(() => triggerScan("periodic"), 60000);
-  scanFoldersNow = scanFoldersOnDeck;
-  scanFoldersOnDeck = [];
-  scanRunning = true;
-  scanFolders(reason);
-}
-
-function folderIsInList(folder, list) {
-  return list.some(
-    (f) => f.accountId == folder.accountId && f.path == folder.path,
-  );
+  messenger.messages.onNewMailReceived.addListener(checkNewMessages, true);
+  await scanFolders("startup");
 }
 
 async function scanAccount(account, scanRegexp, reason) {
   for (let folder of account.folders) {
-    if (
-      !(
-        (scanRegexp && scanRegexp.test(folder.name)) ||
-        folderIsInList(folder, scanFoldersNow)
-      )
-    )
-      continue;
+    if (!(scanRegexp && scanRegexp.test(folder.name))) continue;
     let numScanned = 0;
     let numChanged = 0;
     await debug(
@@ -243,7 +146,6 @@ async function scanFoldersBody(reason) {
     }
   }
   let accounts = await messenger.accounts.list();
-  let sawNewMessage = false;
   for (let account of accounts) {
     try {
       await scanAccount(account, scanRegexp, reason);
@@ -251,7 +153,6 @@ async function scanFoldersBody(reason) {
       await error(`Scan error for account ${account.name}`, ex);
     }
   }
-  return sawNewMessage;
 }
 
 async function scanFolders(reason) {
@@ -262,40 +163,29 @@ async function scanFolders(reason) {
   } catch (ex) {
     await error("Scan error:", ex);
   }
-  // === false here so we don't do this if there was an error.
-  if (result === false) resetSeenBaseline();
-  scanRunning = false;
-  // We should always see at least one new message when we were told to scan
-  // specific folders, so if we didn't, should we try again?
-  // On the one hand, what if the notification was sent prematurely (arguably a
-  // TB bug) and they're not yet visible in the folder index?
-  // On the other hand, what if the messages were somehow removed in between
-  // when we got the notification and when we scanned, so if we keep trying
-  // we'll be in an infinite loop of scanning over and over until the user
-  // receives a message that we detect and scan?
-  // The infinite loop sounds bad, and we always have a scan scheduled for at
-  // most 60 seconds in the future, so I'm going to err on the side of not
-  // scanning again.
+}
 
-  // Having said all that, we do want to keep scanning until there are no new
-  // messages for us to look at.
-  if (result) triggerScan("rescan after found new messages");
+async function* getMessages(list) {
+  await debug(2, list);
+  let page = await list;
+  for (let message of page.messages) {
+    yield message;
+  }
+
+  while (page.id) {
+    page = await messenger.messages.continueList(page.id);
+    for (let message of page.messages) {
+      yield message;
+    }
+  }
 }
 
 async function checkNewMessages(folder, messages) {
   folderString = `${folder.accountId}${folder.path}`;
-  if (folderIsInList(folder, scanFoldersOnDeck)) {
-    await debug(
-      1,
-      `checkNewMessages: Folder ${folderString} already in queue, `,
-      "not queuing again",
-    );
-  } else {
-    await debug(1, `checkNewMessages: Adding folder ${folderString} to queue`);
-    scanFoldersOnDeck.push(folder);
+  await debug(1, `checkNewMessages: checking messages in ${folderString}`);
+  for await (const message of getMessages(messages)) {
+    await checkMessage(message);
   }
-
-  triggerScan("NewMailReceived");
 }
 
 async function checkMessage(message) {
@@ -376,29 +266,6 @@ async function checkRegexp(msgHdr, prefName) {
 
   await debug(2, `${prefName} is empty, not testing`);
   return false;
-}
-
-// message IDs in the API are just numbers that increase monotonically. Each
-// time the backend API needs to share a message with an extension it assigns a
-// new number to that message. Unfortunately, for some resaon the backend
-// sometimes skip IDs, i.e., we can't assume that every ID will be sent to us
-// eventually. We don't want to store an ever-increasing list of IDs we've
-// seen, so we keep a baseline and only worry about IDs above it. Each time we
-// complete a scan without seeing any new messages we reset the baseline.
-var baselineMessageId = 0;
-var seenMessageIds = {};
-
-function seenMessage(id) {
-  if (id <= baselineMessageId) return true;
-  if (seenMessageIds[id]) return true;
-  seenMessageIds[id] = true;
-  return false;
-}
-
-function resetSeenBaseline() {
-  debug(1, "resetSeenBaseline");
-  baselineMessageId = Math.max(...Object.keys(seenMessageIds));
-  seenMessageIds = {};
 }
 
 init();
