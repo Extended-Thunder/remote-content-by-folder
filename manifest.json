@@ -25,14 +25,6 @@
         "paths": [["RemoteContent"]],
         "script": "api/RemoteContent/implementation.js"
       }
-    },
-    "ex_messages": {
-      "schema": "api/ex_messages/schema.json",
-      "parent": {
-        "scopes": ["addon_parent"],
-        "paths": [["ex_messages"]],
-        "script": "api/ex_messages/implementation.js"
-      }
     }
   },
   "background": {

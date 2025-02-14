@@ -92,7 +92,7 @@ async function init() {
     await browser.LegacyPrefs.setDefaultPref(`${PREF_PREFIX}${name}`, value);
   }
 
-  messenger.ex_messages.onNewMailReceived.addListener(checkNewMessages);
+  messenger.messages.onNewMailReceived.addListener(checkNewMessages);
   await scanFolders("startup");
 }
 
