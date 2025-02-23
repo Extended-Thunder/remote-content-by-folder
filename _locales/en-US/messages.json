@@ -38,6 +38,9 @@
   "debugLogging": {
     "message": "Enable debug logging"
   },
+  "debugLoggingLevel": {
+    "message": "at level"
+  },
   "examplesTitle": {
     "message": "Regular Expression Examples"
   },

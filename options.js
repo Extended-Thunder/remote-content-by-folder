@@ -5,6 +5,7 @@ const MAPPINGS = [
   ["rcbf-scan-box", "scan_regexp", "string"],
   ["rcbf-block-first-pref", "block_first", "bool"],
   ["rcbf-debug", "debug", "bool"],
+  ["rcbf-debug-level", "debug_level", "string"],
 ];
 
 async function loadSettings() {
@@ -28,6 +29,16 @@ async function loadSettings() {
         throw new Error("Unrecognized pref type: " + pref_type);
     }
   }
+
+  elt = document.getElementById("rcbf-debug");
+  elt.addEventListener("change", updateSettings);
+  updateSettings();
+}
+
+function updateSettings() {
+  var checkbox = document.getElementById("rcbf-debug");
+  var level = document.getElementById("rcbf-debug-level");
+  level.disabled = !checkbox.checked;
 }
 
 async function saveSettings() {

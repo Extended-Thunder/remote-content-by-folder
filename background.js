@@ -32,6 +32,7 @@
 const PREF_PREFIX = "extensions.remote-content-by-folder.";
 
 const debugPref = "debug";
+const debugLevelPref = "debug_level";
 const allowPref = "allow_regexp";
 const blockPref = "block_regexp";
 const scanPref = "scan_regexp";
@@ -43,6 +44,7 @@ const PREF_DEFAULTS = {
   [blockPref]: "",
   [scanPref]: "",
   [blockFirstPref]: false,
+  [debugLevelPref]: "1",
 };
 
 // True when scan is running, false otherwise.
@@ -112,7 +114,7 @@ async function getPref(name) {
   return await browser.LegacyPrefs.getPref(fullName);
 }
 
-async function debug(...args) {
+async function debug(msgLevel, ...args) {
   let debug;
   try {
     debug = await getPref(debugPref);
@@ -121,7 +123,10 @@ async function debug(...args) {
     debug = true;
   }
   if (debug) {
-    console.log("RCBF:", ...args);
+    var maxLevel = Number(await getPref(debugLevelPref, 1));
+    if (msgLevel <= maxLevel) {
+      console.log("RCBF:", ...args);
+    }
   }
 }
 
@@ -146,15 +151,15 @@ function triggerScan(reason, timeout) {
   // so only one of them can be running at a time. Therefore we don't need to
   // worry about locking here, i.e., when this function is running, it's the
   // only thing that's thinking about starting a scan.
-  debug(`triggerScan(${reason}, ${timeout})`);
+  debug(1, `triggerScan(${reason}, ${timeout})`);
   let newScanDeadline = Date.now() + (timeout || 0);
   if (timeout && newScanDeadline > scanDeadline) {
-    debug("triggerScan: next scan is too soon, ignoring trigger");
+    debug(1, "triggerScan: next scan is too soon, ignoring trigger");
     return;
   }
   if (newScanDeadline > Date.now()) {
     delta = newScanDeadline - Date.now();
-    debug(`triggerScan: scheduling scan for ${delta}ms in the future`);
+    debug(1, `triggerScan: scheduling scan for ${delta}ms in the future`);
     scanDeadline = newScanDeadline;
     clearTimeout(scanTimer);
     scanTimer = setTimeout(() => triggerScan(reason), delta);
@@ -162,6 +167,7 @@ function triggerScan(reason, timeout) {
   }
   if (scanRunning) {
     debug(
+      1,
       "triggerScan: scan time arrived while scan still running, ",
       "postponing for 5s",
     );
@@ -170,7 +176,7 @@ function triggerScan(reason, timeout) {
     scanTimer = setTimeout(() => triggerScan("delayed"), 5000);
     return;
   }
-  debug("triggerScan: scanning now and queuing next scan for 60s from now");
+  debug(1, "triggerScan: scanning now and queuing next scan for 60s from now");
   scanDeadline = Date.now() + 60000;
   clearTimeout(scanTimer);
   scanTimer = setTimeout(() => triggerScan("periodic"), 60000);
@@ -209,7 +215,10 @@ async function scanFoldersBody(reason) {
         continue;
       let numScanned = 0;
       let numChanged = 0;
-      await debug(`Scanning for new messages in ${account.name}${folder.path}`);
+      await debug(
+        1,
+        `Scanning for new messages in ${account.name}${folder.path}`,
+      );
       let page = await messenger.messages.list(
         await tb128(
           () => folder.id,
@@ -222,7 +231,7 @@ async function scanFoldersBody(reason) {
           numScanned += 1;
           sawNewMessage = true;
           if (await checkMessage(message)) {
-            await debug(`Changed message in ${reason} scan`);
+            await debug(1, `Changed message in ${reason} scan`);
             numChanged++;
           }
         }
@@ -230,6 +239,7 @@ async function scanFoldersBody(reason) {
         page = await messenger.messages.continueList(page.id);
       }
       await debug(
+        1,
         `Scanned ${numScanned} messages in ${account.name}` +
           `${folder.path}, changed ${numChanged}`,
       );
@@ -239,7 +249,7 @@ async function scanFoldersBody(reason) {
 }
 
 async function scanFolders(reason) {
-  await debug(`scanFolders(${reason})`);
+  await debug(1, `scanFolders(${reason})`);
   let result;
   try {
     result = await scanFoldersBody(reason);
@@ -270,11 +280,12 @@ async function checkNewMessages(folder, messages) {
   folderString = `${folder.accountId}${folder.path}`;
   if (folderIsInList(folder, scanFoldersOnDeck)) {
     await debug(
+      1,
       `checkNewMessages: Folder ${folderString} already in queue, `,
       "not queuing again",
     );
   } else {
-    await debug(`checkNewMessages: Adding folder ${folderString} to queue`);
+    await debug(1, `checkNewMessages: Adding folder ${folderString} to queue`);
     scanFoldersOnDeck.push(folder);
   }
 
@@ -285,6 +296,7 @@ async function checkMessage(message) {
   let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
   if (currentPolicy != "None") {
     await debug(
+      2,
       `Content policy for message ${message.id} ("${message.subject}") is ` +
         `set to "${currentPolicy}", not modifying`,
     );
@@ -295,6 +307,7 @@ async function checkMessage(message) {
   let requestedPolicy = await getPolicyFromRegExMatch(message);
   if (requestedPolicy && currentPolicy != requestedPolicy) {
     await debug(
+      1,
       `Switching content policy for message ${message.id} `,
       `("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
     );
@@ -331,17 +344,20 @@ async function checkRegexp(msgHdr, prefName) {
     try {
       let regexpObj = new RegExp(regexp);
       await debug(
+        2,
         `Testing ${prefName} regexp "${regexp}" against folder name `,
         `"${msgHdr.folder.name}"`,
       );
       if (regexpObj.test(msgHdr.folder.name)) {
         await debug(
+          2,
           `${prefName} regexp "${regexp}" matched folder name `,
           `"${msgHdr.folder.name}"`,
         );
         return true;
       }
       await debug(
+        2,
         `${prefName} regexp "${regexp}" did not match folder name `,
         `"${msgHdr.folder.name}"`,
       );
@@ -352,7 +368,7 @@ async function checkRegexp(msgHdr, prefName) {
     }
   }
 
-  await debug(`${prefName} is empty, not testing`);
+  await debug(2, `${prefName} is empty, not testing`);
   return false;
 }
 
@@ -374,7 +390,7 @@ function seenMessage(id) {
 }
 
 function resetSeenBaseline() {
-  debug("resetSeenBaseline");
+  debug(1, "resetSeenBaseline");
   baselineMessageId = Math.max(...Object.keys(seenMessageIds));
   seenMessageIds = {};
 }
