@@ -192,6 +192,46 @@ function folderIsInList(folder, list) {
   );
 }
 
+async function scanAccount(account, scanRegexp, reason) {
+  for (let folder of account.folders) {
+    if (
+      !(
+        (scanRegexp && scanRegexp.test(folder.name)) ||
+        folderIsInList(folder, scanFoldersNow)
+      )
+    )
+      continue;
+    let numScanned = 0;
+    let numChanged = 0;
+    await debug(
+      1,
+      `Scanning for new messages in ${account.name}${folder.path}`,
+    );
+    let page = await messenger.messages.list(
+      await tb128(
+        () => folder.id,
+        () => folder,
+      ),
+    );
+    while (true) {
+      for (let message of page.messages) {
+        numScanned += 1;
+        if (await checkMessage(message)) {
+          await debug(1, `Changed message in ${reason} scan`);
+          numChanged++;
+        }
+      }
+      if (!page.id) break;
+      page = await messenger.messages.continueList(page.id);
+    }
+    await debug(
+      1,
+      `Scanned ${numScanned} messages in ${account.name}` +
+        `${folder.path}, changed ${numChanged}`,
+    );
+  }
+}
+
 async function scanFoldersBody(reason) {
   let scanRegexp = await getPref(scanPref);
   if (scanRegexp) {
@@ -205,44 +245,10 @@ async function scanFoldersBody(reason) {
   let accounts = await messenger.accounts.list();
   let sawNewMessage = false;
   for (let account of accounts) {
-    for (let folder of account.folders) {
-      if (
-        !(
-          (scanRegexp && scanRegexp.test(folder.name)) ||
-          folderIsInList(folder, scanFoldersNow)
-        )
-      )
-        continue;
-      let numScanned = 0;
-      let numChanged = 0;
-      await debug(
-        1,
-        `Scanning for new messages in ${account.name}${folder.path}`,
-      );
-      let page = await messenger.messages.list(
-        await tb128(
-          () => folder.id,
-          () => folder,
-        ),
-      );
-      while (true) {
-        for (let message of page.messages) {
-          if (seenMessage(message.id)) continue;
-          numScanned += 1;
-          sawNewMessage = true;
-          if (await checkMessage(message)) {
-            await debug(1, `Changed message in ${reason} scan`);
-            numChanged++;
-          }
-        }
-        if (!page.id) break;
-        page = await messenger.messages.continueList(page.id);
-      }
-      await debug(
-        1,
-        `Scanned ${numScanned} messages in ${account.name}` +
-          `${folder.path}, changed ${numChanged}`,
-      );
+    try {
+      await scanAccount(account, scanRegexp, reason);
+    } catch (ex) {
+      await error(`Scan error for account ${account.name}`, ex);
     }
   }
   return sawNewMessage;
