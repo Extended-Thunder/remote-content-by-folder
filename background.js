@@ -59,54 +59,20 @@ var scanDeadline;
 // Before triggerScan starts a scan, it moves them to scanFoldersNow.
 var scanFoldersOnDeck = [];
 var scanFoldersNow = [];
+var scannedFolders = {};
 
-var thunderbirdVersion = false;
-
-async function tbIsVersion(wantVersion, yes, no) {
-  if (typeof wantVersion == "number") {
-    wantVersion = [wantVersion];
+async function* getMessages(list) {
+  let page = await list;
+  for (let message of page.messages) {
+    yield message;
   }
 
-  if (!thunderbirdVersion) {
-    let browserInfo = await messenger.runtime.getBrowserInfo();
-    thunderbirdVersion = browserInfo.version.split(".").map(parseInt);
-  }
-
-  let tbVersion = [...thunderbirdVersion];
-  let satisfied = true;
-  while (wantVersion.length) {
-    let wantFirst = wantVersion.shift();
-    let tbFirst = tbVersion.shift();
-    if (wantFirst > tbFirst) {
-      satisfied = false;
-      break;
-    }
-    if (wantFirst < tbFirst) {
-      break;
+  while (page.id) {
+    page = await messenger.messages.continueList(page.id);
+    for (let message of page.messages) {
+      yield message;
     }
   }
-
-  if (satisfied) {
-    if (yes) {
-      if (typeof yes == "function") {
-        return yes();
-      } else {
-        return yes;
-      }
-    }
-  } else {
-    if (no) {
-      if (typeof no == "function") {
-        return no();
-      } else {
-        return no;
-      }
-    }
-  }
-}
-
-async function tb128(yes, no) {
-  return await tbIsVersion(128, yes, no);
 }
 
 async function getPref(name) {
@@ -126,8 +92,10 @@ async function debug(msgLevel, ...args) {
     var maxLevel = Number(await getPref(debugLevelPref, 1));
     if (msgLevel <= maxLevel) {
       console.log("RCBF:", ...args);
+      return true;
     }
   }
+  return false;
 }
 
 function error(...args) {
@@ -142,7 +110,7 @@ async function init() {
   }
 
   window.addEventListener("online", (event) => triggerScan("online", 5000));
-  messenger.messages.onNewMailReceived.addListener(checkNewMessages);
+  messenger.messages.onNewMailReceived.addListener(checkNewMessages, true);
   scanTimer = setTimeout(() => triggerScan("initial"), 1);
 }
 
@@ -201,33 +169,25 @@ async function scanAccount(account, scanRegexp, reason) {
       )
     )
       continue;
+
+    let fqp = `${account.name}${folder.path}`;
     let numScanned = 0;
     let numChanged = 0;
-    await debug(
-      1,
-      `Scanning for new messages in ${account.name}${folder.path}`,
-    );
-    let page = await messenger.messages.list(
-      await tb128(
-        () => folder.id,
-        () => folder,
-      ),
-    );
-    while (true) {
-      for (let message of page.messages) {
-        numScanned += 1;
-        if (await checkMessage(message)) {
-          await debug(1, `Changed message in ${reason} scan`);
-          numChanged++;
-        }
+    await debug(1, `Scanning for new messages in ${fqp}`);
+
+    for await (let message of getMessages(messenger.messages.list(folder.id))) {
+      numScanned += 1;
+      if (await checkMessage(message, account)) {
+        await debug(1, `Changed message in ${reason} scan`);
+        numChanged++;
       }
-      if (!page.id) break;
-      page = await messenger.messages.continueList(page.id);
     }
+
+    scannedFolders[fqp] = true;
+
     await debug(
       1,
-      `Scanned ${numScanned} messages in ${account.name}` +
-        `${folder.path}, changed ${numChanged}`,
+      `Scanned ${numScanned} messages in ${fqp}, changed ${numChanged}`,
     );
   }
 }
@@ -283,6 +243,10 @@ async function scanFolders(reason) {
 }
 
 async function checkNewMessages(folder, messages) {
+  for await (let message of getMessages(messages)) {
+    await checkMessage(message);
+  }
+
   folderString = `${folder.accountId}${folder.path}`;
   if (folderIsInList(folder, scanFoldersOnDeck)) {
     await debug(
@@ -298,7 +262,10 @@ async function checkNewMessages(folder, messages) {
   triggerScan("NewMailReceived");
 }
 
-async function checkMessage(message) {
+// account is specified when we are doing an account scan rather than
+// checking a message we received an event about. I.e., we can assume that if
+// account is empty, this check was triggered by an onNewMailReceived event.
+async function checkMessage(message, account) {
   let currentPolicy = await browser.RemoteContent.getContentPolicy(message.id);
   if (currentPolicy != "None") {
     await debug(
@@ -318,6 +285,22 @@ async function checkMessage(message) {
       `("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
+    if (account) {
+      let folder = message.folder;
+      let fqp = `${account.name}${folder.path}`;
+      if (scannedFolders[fqp]) {
+        msg =
+          `Found new message "${message.subject}" in ${fqp} after ` +
+          `first full scan of that folder; we should have been ` +
+          `notified about it`;
+        if (await debug(2, msg)) {
+          // This will cause developer console to pop up, which is good enough
+          // for our purposes.
+          alert(msg);
+        }
+      }
+    }
+
     return requestedPolicy;
   }
   return false;
