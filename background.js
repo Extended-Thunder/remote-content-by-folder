@@ -204,7 +204,10 @@ async function folderPath(account, folder) {
 }
 
 function describeMessage(message) {
-  return `subject ${message.subject} from ${message.author} at ${message.date}`;
+  return (
+    `${message.id} ${message.headerMessageId} "${message.subject}" ` +
+    `${message.author}`
+  );
 }
 
 function* describeMessages(messages) {
