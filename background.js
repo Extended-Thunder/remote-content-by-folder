@@ -214,7 +214,9 @@ function* describeMessages(messages) {
   for (let message of messages.slice(0, 10)) {
     yield describeMessage(message);
   }
-  if (messages.length > 10) yield `plus ${messages.length - 10} more messages`;
+  for (let message of messages.slice(10)) {
+    yield `${message.id}`;
+  }
 }
 
 async function getPref(name) {
