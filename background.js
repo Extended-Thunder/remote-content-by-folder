@@ -512,8 +512,8 @@ async function checkNewMessages(folder, messages) {
   for await (let message of messages) {
     if (seen.isMember(message.id)) {
       msg =
-        `We've already seen supposedly new message ` +
-        `${message.id} "${message.subject}" in ${fqp}`;
+        `We've already seen supposedly new ` +
+        `${await describeMessage(message)} in ${fqp}`;
       await errorEvent("checkNewMessages", msg);
       await registerAnomaly(msg);
       continue;
@@ -546,7 +546,7 @@ async function checkMessage(message, account) {
   if (currentPolicy != "None") {
     await debug(
       2,
-      `Content policy for message ${message.id} ("${message.subject}") is ` +
+      `Content policy for ${await describeMessage(message)} is ` +
         `set to "${currentPolicy}", not modifying`,
     );
     return false;
@@ -557,8 +557,8 @@ async function checkMessage(message, account) {
   if (requestedPolicy && currentPolicy != requestedPolicy) {
     await debug(
       1,
-      `Switching content policy for message ${message.id} `,
-      `("${message.subject}") from "${currentPolicy}" to "${requestedPolicy}"`,
+      `Switching content policy for ${await describeMessage(message)} ` +
+        `from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
     if (account) {
@@ -566,7 +566,7 @@ async function checkMessage(message, account) {
       let fqp = await folderPath(account, folder);
       if (scannedFolders[fqp]) {
         msg =
-          `Found new message ${message.id} "${message.subject}" in ` +
+          `Found new ${await describeMessage(message)} in ` +
           `${fqp} after first full scan of that folder; we should have been ` +
           `notified about it`;
         await errorEvent("checkMessage", msg);
