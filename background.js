@@ -330,6 +330,15 @@ async function errorEvent(func, ...args) {
   error(...args);
 }
 
+async function registerAnomaly(msg) {
+  await messenger.storage.local.set({ lastAnomaly: new Date() });
+  messenger.notifications.create("rcbfAnomaly", {
+    type: "basic",
+    title: "Remote Content By Folder anomaly",
+    message: msg,
+  });
+}
+
 async function init() {
   await enterEvent("init");
   // TODO: Migrate LegacyPrefs to local storage.
@@ -340,8 +349,14 @@ async function init() {
 
   window.addEventListener("online", (event) => triggerScan("online", 5000));
   messenger.messages.onNewMailReceived.addListener(checkNewMessages, true);
-  messenger.notifications.onClicked.addListener((notificationId) => {
-    if (notificationId == "rcbfAnomaly") messenger.runtime.openOptionsPage();
+  messenger.notifications.onClicked.addListener(async (notificationId) => {
+    if (notificationId != "rcbfAnomaly") return;
+    let { lastAnomaly } = await messenger.storage.local.get({
+      lastAnomaly: null,
+    });
+    if (lastAnomaly)
+      await messenger.storage.local.set({ scrollTo: lastAnomaly });
+    messenger.runtime.openOptionsPage();
   });
   scanTimer = setTimeout(() => triggerScan("initial"), 1);
   await returnEvent("init");
@@ -551,11 +566,7 @@ async function checkMessage(message, account) {
           `first full scan of that folder; we should have been ` +
           `notified about it`;
         await errorEvent("checkMessage", msg);
-        messenger.notifications.create("rcbfAnomaly", {
-          type: "basic",
-          title: "Remote Content By Folder anomaly",
-          message: msg,
-        });
+        await registerAnomaly(msg);
       }
     }
 

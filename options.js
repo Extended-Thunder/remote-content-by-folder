@@ -95,11 +95,65 @@ async function getEventLog(el) {
   return built;
 }
 
+function binarySearchEventLog(eventLog, dt) {
+  if (!eventLog) return 0;
+
+  let indexes = [];
+
+  function datePart(idx) {
+    return eventLog.slice(indexes[idx], indexes[idx] + 24);
+  }
+
+  // Find all the line starts so we can binary search through them.
+  for (let i = 0; i < eventLog.length; i = eventLog.indexOf("\n", i) + 1)
+    indexes.push(i);
+
+  let lower = 0;
+  let upper = indexes.length - 1;
+  let searchString = dt.toISOString();
+
+  while (true) {
+    if (lower == upper) return indexes[lower];
+
+    let guess = Math.floor((lower + upper) / 2);
+
+    let guessDate = datePart(guess);
+    if (guessDate == searchString) return indexes[guess];
+
+    let lowerDate = datePart(lower);
+    let upperDate = datePart(upper);
+
+    if (
+      upper - lower == 1 &&
+      lowerDate < searchString &&
+      searchString < upperDate
+    )
+      return indexes[lower];
+
+    if (guessDate >= searchString) upper = guess;
+    if (guessDate <= searchString) lower = guess;
+  }
+}
+
 async function loadEventLog() {
   let eventLog = await getEventLog();
   let elt = document.getElementById("eventLog");
   elt.value = eventLog;
-  elt.setSelectionRange(eventLog.length, eventLog.length);
+  let { scrollTo } = await messenger.storage.local.get({
+    scrollTo: null,
+  });
+  let position = eventLog.length;
+  if (scrollTo) {
+    position = binarySearchEventLog(eventLog, scrollTo);
+    // Move that position to the middle of the text area.
+    for (let i = 0; i < elt.rows / 2; i++) {
+      let newPosition = eventLog.indexOf("\n", position);
+      if (!newPosition) break;
+      position = newPosition + 1;
+    }
+    await messenger.storage.local.remove("scrollTo");
+  }
+  elt.setSelectionRange(position, position);
   // When the page opens, we want the event log to be scrolling automatically
   // as new content is added to the bottom of it. However, once the user
   // scrolls up slightly, we want to stop the automatic scrolling until they
