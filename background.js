@@ -424,7 +424,7 @@ async function scanAccount(account, scanRegexp, reason) {
     )
       continue;
 
-    let fqp = `${account.name}${folder.path}`;
+    let fqp = await folderPath(account, folder);
     let numSeen = 0;
     let numScanned = 0;
     let numChanged = 0;
@@ -518,7 +518,7 @@ async function checkNewMessages(folder, messages) {
     seen.add(message.id);
   }
 
-  folderString = `${folder.accountId}${folder.path}`;
+  folderString = await folderPath(null, folder);
   if (folderIsInList(folder, scanFoldersOnDeck)) {
     await debug(
       1,
@@ -559,7 +559,7 @@ async function checkMessage(message, account) {
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
     if (account) {
       let folder = message.folder;
-      let fqp = `${account.name}${folder.path}`;
+      let fqp = await folderPath(account, folder);
       if (scannedFolders[fqp]) {
         msg =
           `Found new message "${message.subject}" in ${fqp} after ` +
