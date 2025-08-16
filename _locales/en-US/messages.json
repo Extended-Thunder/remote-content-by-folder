@@ -52,5 +52,11 @@
   },
   "matchFolderExamples": {
     "message": "^(Spam|Trash|Deleted (Items|Messages))$"
+  },
+  "eventLogTitle": {
+    "message": "Event Log"
+  },
+  "eventLogClear": {
+    "message": "Clear"
   }
 }

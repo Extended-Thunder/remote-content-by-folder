@@ -37,7 +37,7 @@
       "strict_max_version": "143.*"
     }
   },
-  "permissions": ["messagesRead", "accountsRead"],
+  "permissions": ["messagesRead", "accountsRead", "storage", "notifications"],
   "icons": {
     "48": "icon48.png",
     "96": "icon96.png"

@@ -25,9 +25,129 @@
 // * We scan folders at least every 60 seconds, including the two scan triggers
 //   mentioned above in that calculation (i.e., when we trigger an out-of-cycle
 //   scan, the next timed scan happens 60 seconds after that scan began).
+
+// This class stores a compact representation of an arbitrarily long sequence
+// of integers. The more gaps there are in the sequence, the more memory it
+// will take up, but this isn't a big problem for our use case because the
+// message IDs returned by Thunderbird to the extension have a lot of
+// contiguous ranges in them.
 //
-// * When scanning folders, we repeat the scan consecutively until we do a full
-//   scan without finding any new messages to process.
+// The internal representation of the sequence is an array of objects in
+// ascending order which represent non-overlapping ranges by specifying their
+// start and end numbers.
+//
+// You call isMember() to find out if a number is in the set, or add() to add
+// a number to the set. For efficiency, add() assumes that the number you
+// specified isn't already in the set, and behavior is undefined and may be
+// wrong if you violate that, so don't.
+//
+// Since Thunderbird frequently returns a bunch of message IDs to us in
+// monotonically increasing order, there's a performance optimization here
+// wherein we keep track of the last range we operated on so we can find it
+// quickly if it's relevant to the next number we need to do something with.
+//
+// I'm sure someone already wrote something like this in some JavaScript
+// library somewhere, but I don't want to have to include an entire library
+// just for one little bit of it, and besides, it took me less than an hour
+// to write and it was an interesting little puzzle.
+class SequenceSet {
+  constructor() {
+    this.ranges = [];
+    this.lastRange = null;
+  }
+
+  isMember(num) {
+    if (
+      this.lastRange &&
+      this.lastRange.start <= num &&
+      this.lastRange.end >= num
+    )
+      return true;
+
+    for (let range of this.ranges) {
+      if (range.start > num) return false;
+      if (range.end >= num) {
+        this.lastRange = range;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Do not call this with numbers that are already in the set.
+  add(num) {
+    if (this.lastRange && this.lastRange.end == num - 1) {
+      this.lastRange.end = num;
+      let lastIndex = this.ranges.indexOf(this.lastRange);
+      if (lastIndex == this.ranges.length - 1) return;
+      if (this.ranges[lastIndex + 1].start == num + 1) {
+        this.lastRange.end = this.ranges[lastIndex + 1].end;
+        this.ranges.splice(lastIndex + 1, 1);
+      }
+      return;
+    }
+    for (let i = 0; i < this.ranges.length; i++) {
+      if (this.ranges[i].start > num) {
+        if (this.ranges[i].start == num + 1) {
+          this.ranges[i].start = num;
+          this.lastRange = this.ranges[i];
+          return;
+        }
+        let range = {
+          start: num,
+          end: num,
+        };
+        this.ranges.splice(i, 0, range);
+        this.lastRange = range;
+        return;
+      }
+      if (this.ranges[i].end == num - 1) {
+        this.lastRange = this.ranges[i];
+        this.add(num);
+        return;
+      }
+    }
+    let range = {
+      start: num,
+      end: num,
+    };
+    this.ranges.splice(this.ranges.length, 0, range);
+    this.lastRange = range;
+  }
+
+  dump() {
+    let msg = "";
+    for (let range of this.ranges) {
+      msg += `${range.start}:${range.end} `;
+    }
+    return msg.trim();
+  }
+
+  // Generate 100 random numbers between 1 and 100. Give each of them a 75%
+  // chance of going into the sequence. When done confirm that only the members
+  // we expect to be in the sequence are there.
+  test() {
+    let inseq = [];
+    for (let i = 0; i < 100; i++) {
+      let num = Math.floor(Math.random() * 100);
+      if (this.isMember(num)) continue;
+      if (inseq.indexOf(num) > -1)
+        console.log("isMember is wrong", num, this.dump());
+      if (Math.random() <= 0.75) {
+        this.add(num);
+        if (!this.isMember(num))
+          console.log(`just added ${num} but it didn't work`, this.dump());
+        inseq.push(num);
+      }
+    }
+    for (let i = 0; i < 100; i++) {
+      if (inseq.indexOf(i) == -1 && this.isMember(i))
+        console.log(`${i} should not be in sequence but isMember says it is`);
+    }
+    console.log(inseq.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+    console.log(this.dump());
+  }
+}
 
 const PREF_PREFIX = "extensions.remote-content-by-folder.";
 
@@ -60,6 +180,7 @@ var scanDeadline;
 var scanFoldersOnDeck = [];
 var scanFoldersNow = [];
 var scannedFolders = {};
+var seen = new SequenceSet();
 
 async function* getMessages(list) {
   let page = await list;
@@ -73,6 +194,24 @@ async function* getMessages(list) {
       yield message;
     }
   }
+}
+
+async function folderPath(account, folder) {
+  if (!account) {
+    account = await messenger.accounts.get(folder.accountId);
+  }
+  return `${account.name}${folder.path}`;
+}
+
+function describeMessage(message) {
+  return `subject ${message.subject} from ${message.author} at ${message.date}`;
+}
+
+function* describeMessages(messages) {
+  for (let message of messages.slice(0, 10)) {
+    yield describeMessage(message);
+  }
+  if (messages.length > 10) yield `plus ${messages.length - 10} more messages`;
 }
 
 async function getPref(name) {
@@ -98,11 +237,76 @@ async function debug(msgLevel, ...args) {
   return false;
 }
 
+function info(...args) {
+  console.log("RCBF:", ...args);
+}
+
 function error(...args) {
   console.error("RCBF:", ...args);
 }
 
+async function event(...args) {
+  let { eventLog } = await messenger.storage.local.get({ eventLog: {} });
+  let now = new Date();
+  let timestamp = now.toISOString();
+
+  let msg = timestamp + ":";
+  for (let piece of args) {
+    msg += ` ${piece}`;
+  }
+  msg += "\n";
+
+  let date = timestamp.replace(/T.*/, "");
+  if (eventLog[date]) eventLog[date] += msg;
+  else eventLog[date] = msg;
+  if (eventLog.length > 2) {
+    // Keep today and yesterday
+    let keys = Object.keys(eventLog);
+    let old = keys.sort().slice(0, keys.length - 2);
+    for (let date of old) delete eventLog[date];
+  }
+  await messenger.storage.local.set({ eventLog: eventLog });
+}
+
+async function enterEvent(func, ...args) {
+  // They passed in the function, not its name.
+  if (typeof func == "function") func = func.name;
+  let msg = ["Entering", func];
+  if (args.length) {
+    msg.push("with arguments:", ...args);
+  }
+  await event(...msg);
+}
+
+async function returnEvent(func, value, ...args) {
+  // They passed in the function, not its name.
+  if (typeof func == "function") func = func.name;
+  let msg = ["Returning from", func];
+  if (value !== undefined) {
+    msg.push("with value", value);
+  }
+  if (args.length) {
+    msg.push("additional info:", ...args);
+  }
+  await event(...msg);
+}
+
+async function infoEvent(func, ...args) {
+  // They passed in the function, not its name.
+  if (typeof func == "function") func = func.name;
+  await event(`info from ${func}:`, ...args);
+  info(...args);
+}
+
+async function errorEvent(func, ...args) {
+  // They passed in the function, not its name.
+  if (typeof func == "function") func = func.name;
+  await event(`ERROR from ${func}:`, ...args);
+  error(...args);
+}
+
 async function init() {
+  await enterEvent("init");
   // TODO: Migrate LegacyPrefs to local storage.
   let prefs = {};
   for (let [name, value] of Object.entries(PREF_DEFAULTS)) {
@@ -111,18 +315,23 @@ async function init() {
 
   window.addEventListener("online", (event) => triggerScan("online", 5000));
   messenger.messages.onNewMailReceived.addListener(checkNewMessages, true);
+  messenger.notifications.onClicked.addListener((notificationId) => {
+    if (notificationId == "rcbfAnomaly") messenger.runtime.openOptionsPage();
+  });
   scanTimer = setTimeout(() => triggerScan("initial"), 1);
+  await returnEvent("init");
 }
 
-function triggerScan(reason, timeout) {
+async function triggerScan(reason, timeout) {
   // JavaScript is single-threaded, friends, and this function is synchronous,
   // so only one of them can be running at a time. Therefore we don't need to
   // worry about locking here, i.e., when this function is running, it's the
   // only thing that's thinking about starting a scan.
-  debug(1, `triggerScan(${reason}, ${timeout})`);
+  await enterEvent("triggerScan", reason, timeout);
   let newScanDeadline = Date.now() + (timeout || 0);
   if (timeout && newScanDeadline > scanDeadline) {
     debug(1, "triggerScan: next scan is too soon, ignoring trigger");
+    await returnEvent("triggerScan", undefined, "next scan is too soon");
     return;
   }
   if (newScanDeadline > Date.now()) {
@@ -131,6 +340,7 @@ function triggerScan(reason, timeout) {
     scanDeadline = newScanDeadline;
     clearTimeout(scanTimer);
     scanTimer = setTimeout(() => triggerScan(reason), delta);
+    await returnEvent("triggerScan", undefined, "set timer");
     return;
   }
   if (scanRunning) {
@@ -142,6 +352,7 @@ function triggerScan(reason, timeout) {
     scanDeadline = Date.now() + 5000;
     clearTimeout(scanTimer);
     scanTimer = setTimeout(() => triggerScan("delayed"), 5000);
+    await returnEvent("triggerScan", undefined, "scan in progress");
     return;
   }
   debug(1, "triggerScan: scanning now and queuing next scan for 60s from now");
@@ -152,6 +363,7 @@ function triggerScan(reason, timeout) {
   scanFoldersOnDeck = [];
   scanRunning = true;
   scanFolders(reason);
+  await returnEvent("triggerScan", undefined, "launched async scan");
 }
 
 function folderIsInList(folder, list) {
@@ -161,6 +373,8 @@ function folderIsInList(folder, list) {
 }
 
 async function scanAccount(account, scanRegexp, reason) {
+  await enterEvent("scanAccount", account.name, scanRegexp, reason);
+
   for (let folder of account.folders) {
     if (
       !(
@@ -171,80 +385,97 @@ async function scanAccount(account, scanRegexp, reason) {
       continue;
 
     let fqp = `${account.name}${folder.path}`;
+    let numSeen = 0;
     let numScanned = 0;
     let numChanged = 0;
     await debug(1, `Scanning for new messages in ${fqp}`);
 
     for await (let message of getMessages(messenger.messages.list(folder.id))) {
+      if (seen.isMember(message.id)) {
+        numSeen++;
+        continue;
+      }
       numScanned += 1;
       if (await checkMessage(message, account)) {
         await debug(1, `Changed message in ${reason} scan`);
         numChanged++;
       }
+      seen.add(message.id);
     }
 
     scannedFolders[fqp] = true;
 
-    await debug(
-      1,
-      `Scanned ${numScanned} messages in ${fqp}, changed ${numChanged}`,
-    );
+    let msg =
+      `Scanned ${numScanned} messages in ${fqp}, ` +
+      `changed ${numChanged}, ` +
+      `skipped previously seen ${numSeen}`;
+    if (numScanned) await infoEvent("scanAccount", msg);
+    else if (numChanged || numSeen) await debug(1, msg);
   }
+  await returnEvent("scanAccount");
 }
 
 async function scanFoldersBody(reason) {
+  await enterEvent("scanFoldersBody", reason);
+
   let scanRegexp = await getPref(scanPref);
   if (scanRegexp) {
     try {
       scanRegexp = new RegExp(scanRegexp);
     } catch (ex) {
-      await error(`Invalid scan regexp: "${scanRegexp}"`);
+      await errorEvent(
+        "scanFoldersBody",
+        `Invalid scan regexp: "${scanRegexp}"`,
+      );
+      await returnEvent("scanFoldersBody", "invalid scan regexp");
       return;
     }
   }
   let accounts = await messenger.accounts.list();
-  let sawNewMessage = false;
   for (let account of accounts) {
     try {
       await scanAccount(account, scanRegexp, reason);
     } catch (ex) {
-      await error(`Scan error for account ${account.name}`, ex);
+      await errorEvent(
+        "scanFoldersBody",
+        `Scan error for account ${account.name}`,
+        ex,
+      );
     }
   }
-  return sawNewMessage;
+  await returnEvent("scanFoldersBody");
 }
 
 async function scanFolders(reason) {
-  await debug(1, `scanFolders(${reason})`);
-  let result;
+  await enterEvent("scanFolders", reason);
   try {
-    result = await scanFoldersBody(reason);
+    await scanFoldersBody(reason);
   } catch (ex) {
-    await error("Scan error:", ex);
+    await errorEvent("scanFolders", "Scan error:", ex);
   }
-  // === false here so we don't do this if there was an error.
-  if (result === false) resetSeenBaseline();
   scanRunning = false;
-  // We should always see at least one new message when we were told to scan
-  // specific folders, so if we didn't, should we try again?
-  // On the one hand, what if the notification was sent prematurely (arguably a
-  // TB bug) and they're not yet visible in the folder index?
-  // On the other hand, what if the messages were somehow removed in between
-  // when we got the notification and when we scanned, so if we keep trying
-  // we'll be in an infinite loop of scanning over and over until the user
-  // receives a message that we detect and scan?
-  // The infinite loop sounds bad, and we always have a scan scheduled for at
-  // most 60 seconds in the future, so I'm going to err on the side of not
-  // scanning again.
-
-  // Having said all that, we do want to keep scanning until there are no new
-  // messages for us to look at.
-  if (result) triggerScan("rescan after found new messages");
+  await returnEvent("scanFolders");
 }
 
 async function checkNewMessages(folder, messages) {
-  for await (let message of getMessages(messages)) {
+  await enterEvent("checkNewMessages", await folderPath(null, folder));
+  messages = await Array.fromAsync(getMessages(messages));
+  await infoEvent(
+    "checkNewMessages",
+    "messages:",
+    ...describeMessages(messages),
+  );
+
+  for await (let message of messages) {
+    if (seen.isMember(message.id)) {
+      await errorEvent(
+        "checkNewMessages",
+        `we've already seen supposedly new message ${message.id}`,
+      );
+      continue;
+    }
     await checkMessage(message);
+    seen.add(message.id);
   }
 
   folderString = `${folder.accountId}${folder.path}`;
@@ -259,7 +490,8 @@ async function checkNewMessages(folder, messages) {
     scanFoldersOnDeck.push(folder);
   }
 
-  triggerScan("NewMailReceived");
+  await triggerScan("NewMailReceived");
+  await returnEvent("checkNewMessages");
 }
 
 // account is specified when we are doing an account scan rather than
@@ -293,11 +525,12 @@ async function checkMessage(message, account) {
           `Found new message "${message.subject}" in ${fqp} after ` +
           `first full scan of that folder; we should have been ` +
           `notified about it`;
-        if (await debug(2, msg)) {
-          // This will cause developer console to pop up, which is good enough
-          // for our purposes.
-          alert(msg);
-        }
+        await errorEvent("checkMessage", msg);
+        messenger.notifications.create("rcbfAnomaly", {
+          type: "basic",
+          title: "Remote Content By Folder anomaly",
+          message: msg,
+        });
       }
     }
 
@@ -359,29 +592,6 @@ async function checkRegexp(msgHdr, prefName) {
 
   await debug(2, `${prefName} is empty, not testing`);
   return false;
-}
-
-// message IDs in the API are just numbers that increase monotonically. Each
-// time the backend API needs to share a message with an extension it assigns a
-// new number to that message. Unfortunately, for some resaon the backend
-// sometimes skip IDs, i.e., we can't assume that every ID will be sent to us
-// eventually. We don't want to store an ever-increasing list of IDs we've
-// seen, so we keep a baseline and only worry about IDs above it. Each time we
-// complete a scan without seeing any new messages we reset the baseline.
-var baselineMessageId = 0;
-var seenMessageIds = {};
-
-function seenMessage(id) {
-  if (id <= baselineMessageId) return true;
-  if (seenMessageIds[id]) return true;
-  seenMessageIds[id] = true;
-  return false;
-}
-
-function resetSeenBaseline() {
-  debug(1, "resetSeenBaseline");
-  baselineMessageId = Math.max(...Object.keys(seenMessageIds));
-  seenMessageIds = {};
 }
 
 init();

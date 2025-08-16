@@ -71,7 +71,7 @@ async function cancelSettings() {
   window.close();
 }
 
-function init() {
+async function init() {
   let btn_save = document.getElementById("btn_save");
   let btn_reset = document.getElementById("btn_reset");
   let btn_cancel = document.getElementById("btn_cancel");
@@ -79,6 +79,65 @@ function init() {
   btn_reset.addEventListener("click", loadSettings);
   btn_cancel.addEventListener("click", cancelSettings);
   loadSettings();
+  await loadEventLog();
+}
+
+var userScrolling = false;
+
+async function getEventLog(el) {
+  if (!el) {
+    let { eventLog } = await messenger.storage.local.get({ eventLog: {} });
+    el = eventLog;
+  }
+  let keys = Object.keys(el).sort();
+  let built = "";
+  for (let key of keys) built += el[key];
+  return built;
+}
+
+async function loadEventLog() {
+  let eventLog = await getEventLog();
+  let elt = document.getElementById("eventLog");
+  elt.value = eventLog;
+  elt.setSelectionRange(eventLog.length, eventLog.length);
+  // When the page opens, we want the event log to be scrolling automatically
+  // as new content is added to the bottom of it. However, once the user
+  // scrolls up slightly, we want to stop the automatic scrolling until they
+  // scroll back down to the bottom.
+  // When they are all the way at the bottom, the formula
+  // elt.scrollHeight - (elt.scrollTop + elt.clientHeight) _should_ equal 0,
+  // but it's not always exactly there, so we are leaving a small error
+  // margin to produce the desired behavior.
+  elt.addEventListener("scroll", (event) => {
+    let elt = event.target;
+    userScrolling = elt.scrollHeight - (elt.scrollTop + elt.clientHeight) > 10;
+  });
+  document
+    .getElementById("btn_clearEventLog")
+    .addEventListener("click", clearEventLog);
+  messenger.storage.local.onChanged.addListener(updateEventLog);
+}
+
+async function clearEventLog() {
+  await messenger.storage.local.set({ eventLog: {} });
+}
+
+async function updateEventLog(changes, area) {
+  var change = changes["eventLog"];
+  if (!change) return;
+  let eventLog = await getEventLog(change.newValue);
+  let elt = document.getElementById("eventLog");
+  let saveUserScrolling = userScrolling;
+  elt.value = eventLog;
+  if (!saveUserScrolling) scrollEventLogToEnd();
+}
+
+function scrollEventLogToEnd() {
+  let elt = document.getElementById("eventLog");
+  elt.setSelectionRange(elt.value.length, elt.value.length);
+  if (elt.scrollHeight - (elt.scrollTop + elt.clientHeight) >= 10)
+    setTimeout(scrollEventLogToEnd, 100);
+  else userScrolling = false;
 }
 
 window.addEventListener("load", init, false);
