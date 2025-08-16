@@ -203,14 +203,42 @@ async function folderPath(account, folder) {
   return `${account.name}${folder.path}`;
 }
 
-function describeMessage(message) {
+async function describeMessage(message) {
+  if (!(message.headerMessageId || message.subject || message.author)) {
+    var newMessage, msg;
+    try {
+      newMessage = await messenger.messages.get(message.id);
+    } catch (ex) {
+      msg =
+        `Internal Thunderbird error: message ${message.id} returned by ` +
+        `API to extension is missing data and attempt to refetch it ` +
+        `failed with ${ex}`;
+      registerAnomaly(msg);
+      return `${message.id}`;
+    }
+    message = newMessage;
+    if (!(message.headerMessageId || message.subject || message.author)) {
+      msg =
+        `Internal Thunderbird error: message ${message.id} returned by ` +
+        `API to extension is missing data and data is still missing after ` +
+        `refetching message.`;
+      registerAnomaly(msg);
+      return `${message.id}`;
+    }
+    msg =
+      `Internal Thunderbird error: message ${message.id} returned by ` +
+      `API to extension was initially missing data, but data appeared ` +
+      `after refetching: headerMessageId=${message.headerMessageId} ` +
+      `subject=${message.subject} author=${message.author}`;
+    registerAnomaly(msg);
+  }
   return (
     `${message.id} ${message.headerMessageId} "${message.subject}" ` +
     `${message.author}`
   );
 }
 
-function* describeMessages(messages) {
+async function* describeMessages(messages) {
   for (let message of messages.slice(0, 10)) {
     yield describeMessage(message);
   }
