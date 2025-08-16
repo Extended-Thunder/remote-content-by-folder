@@ -498,20 +498,19 @@ async function scanFolders(reason) {
 }
 
 async function checkNewMessages(folder, messages) {
-  await enterEvent("checkNewMessages", await folderPath(null, folder));
+  let fqp = await folderPath(null, folder);
   messages = await Array.fromAsync(getMessages(messages));
-  await infoEvent(
-    "checkNewMessages",
-    "messages:",
-    ...describeMessages(messages),
-  );
+  let messageDescriptions = await Array.fromAsync(describeMessages(messages));
+  messageDescriptions = "[" + messageDescriptions.join(", ") + "]";
+  await enterEvent("checkNewMessages", fqp, messageDescriptions);
 
   for await (let message of messages) {
     if (seen.isMember(message.id)) {
-      await errorEvent(
-        "checkNewMessages",
-        `we've already seen supposedly new message ${message.id}`,
-      );
+      msg =
+        `We've already seen supposedly new message ` +
+        `${message.id} "${message.subject}" in ${fqp}`;
+      await errorEvent("checkNewMessages", msg);
+      await registerAnomaly(msg);
       continue;
     }
     await checkMessage(message);
@@ -562,8 +561,8 @@ async function checkMessage(message, account) {
       let fqp = await folderPath(account, folder);
       if (scannedFolders[fqp]) {
         msg =
-          `Found new message "${message.subject}" in ${fqp} after ` +
-          `first full scan of that folder; we should have been ` +
+          `Found new message ${message.id} "${message.subject}" in ` +
+          `${fqp} after first full scan of that folder; we should have been ` +
           `notified about it`;
         await errorEvent("checkMessage", msg);
         await registerAnomaly(msg);
