@@ -530,6 +530,17 @@ async function scanFolders(reason) {
   await returnEvent("scanFolders");
 }
 
+var seenRecently = {};
+
+function wasSeenRecently(num) {
+  let now = new Date().getTime();
+  let cutoff = now - 5000;
+  let keys = Object.keys(seenRecently);
+  for (let key of keys)
+    if (seenRecently[key] < cutoff) delete seenRecently[key];
+  return seenRecently[num] ? true : false;
+}
+
 async function checkNewMessages(folder, messages) {
   let fqp = await folderPath(null, folder);
   messages = await Array.fromAsync(getMessages(messages));
@@ -539,15 +550,25 @@ async function checkNewMessages(folder, messages) {
 
   for await (let message of messages) {
     if (seen.isMember(message.id)) {
-      msg =
-        `We've already seen supposedly new ` +
-        `${await describeMessage(message)} in ${fqp}`;
-      await errorEvent("checkNewMessages", msg);
-      await registerAnomaly(msg);
+      if (wasSeenRecently(message.id)) {
+        await infoEvent(
+          "checkNewMessages",
+          `Received new mail notification for ` +
+            `${await describeMessage(message)} in ${fqp} ` +
+            `when we've recently already seen it`,
+        );
+      } else {
+        msg =
+          `We've already seen supposedly new ` +
+          `${await describeMessage(message)} in ${fqp}`;
+        await errorEvent("checkNewMessages", msg);
+        await registerAnomaly(msg);
+      }
       continue;
     }
     await checkMessage(message);
     seen.add(message.id);
+    seenRecently[message.id] = new Date().getTime();
   }
 
   folderString = await folderPath(null, folder);
