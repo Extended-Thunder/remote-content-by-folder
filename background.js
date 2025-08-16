@@ -245,27 +245,52 @@ function error(...args) {
   console.error("RCBF:", ...args);
 }
 
+var pendingEvents = [];
+var flushingEvents;
+
+async function flushEvents() {
+  try {
+    let { eventLog } = await messenger.storage.local.get({ eventLog: {} });
+
+    while (pendingEvents.length) {
+      let event = pendingEvents.shift();
+      let now = event[0];
+      let args = event[1];
+
+      let timestamp = now.toISOString();
+
+      let msg = timestamp + ":";
+      for (let piece of args) {
+        msg += ` ${piece}`;
+      }
+      msg += "\n";
+
+      let date = timestamp.replace(/T.*/, "");
+      if (eventLog[date]) eventLog[date] += msg;
+      else eventLog[date] = msg;
+      if (eventLog.length > 2) {
+        // Keep today and yesterday
+        let keys = Object.keys(eventLog);
+        let old = keys.sort().slice(0, keys.length - 2);
+        for (let date of old) delete eventLog[date];
+      }
+    }
+
+    await messenger.storage.local.set({ eventLog: eventLog });
+  } catch (ex) {
+    flushingEvents = undefined;
+    throw ex;
+  }
+  flushingEvents = undefined;
+}
+
 async function event(...args) {
-  let { eventLog } = await messenger.storage.local.get({ eventLog: {} });
-  let now = new Date();
-  let timestamp = now.toISOString();
-
-  let msg = timestamp + ":";
-  for (let piece of args) {
-    msg += ` ${piece}`;
-  }
-  msg += "\n";
-
-  let date = timestamp.replace(/T.*/, "");
-  if (eventLog[date]) eventLog[date] += msg;
-  else eventLog[date] = msg;
-  if (eventLog.length > 2) {
-    // Keep today and yesterday
-    let keys = Object.keys(eventLog);
-    let old = keys.sort().slice(0, keys.length - 2);
-    for (let date of old) delete eventLog[date];
-  }
-  await messenger.storage.local.set({ eventLog: eventLog });
+  pendingEvents.push([new Date(), args]);
+  if (!flushingEvents) flushingEvents = flushEvents();
+  await flushingEvents;
+  if (!pendingEvents || flushingEvents) return;
+  flushingEvents = flushEvents();
+  await flushingEvents;
 }
 
 async function enterEvent(func, ...args) {
