@@ -571,7 +571,7 @@ async function checkSeenRecently() {
 
     if (events.filter((elt) => elt.what == "initial scan").length) continue;
 
-    let desc = `${await folderPath(null, folder)} await describeMessage(message);`;
+    let desc = `${await folderPath(null, folder)} ${await describeMessage(message)};`;
 
     let timing = [];
     for (let event of events)
