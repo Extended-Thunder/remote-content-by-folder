@@ -661,18 +661,6 @@ async function checkMessage(message, account) {
         `from "${currentPolicy}" to "${requestedPolicy}"`,
     );
     await browser.RemoteContent.setContentPolicy(message.id, requestedPolicy);
-    if (account) {
-      let folder = message.folder;
-      let fqp = await folderPath(account, folder);
-      if (scannedFolders[fqp]) {
-        msg =
-          `Found new ${await describeMessage(message)} in ` +
-          `${fqp} after first full scan of that folder; we should have been ` +
-          `notified about it`;
-        await errorEvent("checkMessage", msg);
-        await registerAnomaly(msg);
-      }
-    }
 
     return requestedPolicy;
   }
