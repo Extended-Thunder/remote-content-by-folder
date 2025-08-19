@@ -550,60 +550,79 @@ function setSeenRecently(folder, message, how) {
   });
 }
 
+var checkingSeenRecently = false;
+
 async function checkSeenRecently() {
-  // Don't check any messages until 60 seconds after the first time we saw them.
-  // That should be more than enough time for any notifications to come in!
-  // If the first event is a notification, there's nothing for us to do.
-  // If there was an initial scan, that's also fine.
-  // If there are no notifications, that's an error and an anomaly.
-  // Otherwise it's just an informational message.
-  let cutoff = new Date().getTime() - 60000;
-  let expired = [];
-  let anomalies = [];
-  for (let [messageId, seen] of Object.entries(seenRecently)) {
-    let folder = seen.folder;
-    let message = seen.message;
-    let events = seen.events;
-    if (events[0].when.getTime() > cutoff) continue;
-    expired.push(messageId);
+  enterEvent("checkSeenRecently");
+  if (checkingSeenRecently) {
+    // Don't let multiple checks run at the same time
+    returnEvent("checkSeenRecently", undefined, "already running");
+    return;
+  }
+  checkingSeenRecently = true;
+  try {
+    // Don't check any messages until 60 seconds after the first time we saw
+    // them. That should be more than enough time for any notifications to come
+    // in!
+    // If the first event is a notification, there's nothing for us to do.
+    // If there was an initial scan, that's also fine.
+    // If there are no notifications, that's an error and an anomaly.
+    // Otherwise it's just an informational message.
+    let cutoff = new Date().getTime() - 60000;
+    let expired = [];
+    let anomalies = [];
+    for (let [messageId, seen] of Object.entries(seenRecently)) {
+      let folder = seen.folder;
+      let message = seen.message;
+      let events = seen.events;
+      if (events[0].when.getTime() > cutoff) continue;
+      expired.push(messageId);
 
-    if (events[0].what == "notification") continue;
+      if (events[0].what == "notification") continue;
 
-    if (events.filter((elt) => elt.what == "initial scan").length) continue;
+      if (events.filter((elt) => elt.what == "initial scan").length) continue;
 
-    let desc = `${await folderPath(null, folder)} ${await describeMessage(message)};`;
+      let desc =
+        `${await folderPath(null, folder)} ` +
+        `${await describeMessage(message)};`;
 
-    let timing = [];
-    for (let event of events)
-      timing.push(`${event.what} at ${event.when.toISOString()}`);
-    timing = timing.join(", ");
+      let timing = [];
+      for (let event of events)
+        timing.push(`${event.what} at ${event.when.toISOString()}`);
+      timing = timing.join(", ");
 
-    let foundNotifications = events.filter(
-      (elt) => elt.what == "notification",
-    ).length;
+      let foundNotifications = events.filter(
+        (elt) => elt.what == "notification",
+      ).length;
 
-    if (foundNotifications > 1)
-      anomalies.push(`message ${desc} multiple notifications: ${timing}`);
-    else if (foundNotifications) {
-      await infoEvent(
-        "checkSeenRecently",
-        `message ${desc} notification received after scan: ${timing}`,
-      );
-      continue;
+      if (foundNotifications > 1)
+        anomalies.push(`message ${desc} multiple notifications: ${timing}`);
+      else if (foundNotifications) {
+        await infoEvent(
+          "checkSeenRecently",
+          `message ${desc} notification received after scan: ${timing}`,
+        );
+        continue;
+      }
+
+      anomalies.push(`message ${desc} ${timing}, no notification`);
     }
 
-    anomalies.push(`message ${desc} ${timing}, no notification`);
+    for (let msg of anomalies) await errorEvent("checkSeenRecently", msg);
+
+    if (anomalies.length > 1) {
+      registerAnomaly(
+        "Multiple notification anomalies detected; see error log for details",
+      );
+    } else if (anomalies.length) registerAnomaly(anomalies[0]);
+
+    for (let messageId of expired) delete seenRecently[messageId];
+  } catch (ex) {
+    checkingSeenRecently = false;
+    throw ex;
   }
-
-  for (let msg of anomalies) await errorEvent("checkSeenRecently", msg);
-
-  if (anomalies.length > 1) {
-    registerAnomaly(
-      "Multiple notification anomalies detected; see error log for details",
-    );
-  } else if (anomalies.length) registerAnomaly(anomalies[0]);
-
-  for (let messageId of expired) delete seenRecently[messageId];
+  checkingSeenRecently = false;
+  returnEvent("checkSeenRecently");
 }
 
 setInterval(checkSeenRecently, 5000);
