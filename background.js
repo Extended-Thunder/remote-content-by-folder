@@ -213,7 +213,7 @@ async function describeMessage(message) {
         `Internal Thunderbird error: message ${message.id} returned by ` +
         `API to extension is missing data and attempt to refetch it ` +
         `failed with ${ex}`;
-      registerAnomaly(msg);
+      await registerAnomaly(msg);
       return `${message.id}`;
     }
     message = newMessage;
@@ -222,7 +222,7 @@ async function describeMessage(message) {
         `Internal Thunderbird error: message ${message.id} returned by ` +
         `API to extension is missing data and data is still missing after ` +
         `refetching message.`;
-      registerAnomaly(msg);
+      await registerAnomaly(msg);
       return `${message.id}`;
     }
     msg =
@@ -230,7 +230,7 @@ async function describeMessage(message) {
       `API to extension was initially missing data, but data appeared ` +
       `after refetching: headerMessageId=${message.headerMessageId} ` +
       `subject=${message.subject} author=${message.author}`;
-    registerAnomaly(msg);
+    await registerAnomaly(msg);
   }
   return (
     `${message.id} ${message.headerMessageId} "${message.subject}" ` +
@@ -365,7 +365,7 @@ async function errorEvent(func, ...args) {
 
 async function registerAnomaly(msg) {
   await messenger.storage.local.set({ lastAnomaly: new Date() });
-  messenger.notifications.create("rcbfAnomaly", {
+  await messenger.notifications.create("rcbfAnomaly", {
     type: "basic",
     title: "Remote Content By Folder anomaly",
     message: msg,
@@ -611,10 +611,10 @@ async function checkSeenRecently() {
     for (let msg of anomalies) await errorEvent("checkSeenRecently", msg);
 
     if (anomalies.length > 1) {
-      registerAnomaly(
+      await registerAnomaly(
         "Multiple notification anomalies detected; see error log for details",
       );
-    } else if (anomalies.length) registerAnomaly(anomalies[0]);
+    } else if (anomalies.length) await registerAnomaly(anomalies[0]);
 
     for (let messageId of expired) delete seenRecently[messageId];
   } catch (ex) {
