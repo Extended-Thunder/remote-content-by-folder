@@ -213,6 +213,7 @@ async function describeMessage(message) {
         `Internal Thunderbird error: message ${message.id} returned by ` +
         `API to extension is missing data and attempt to refetch it ` +
         `failed with ${ex}`;
+      await errorEvent("describeMessage", msg);
       await registerAnomaly(msg);
       return `${message.id}`;
     }
@@ -222,6 +223,7 @@ async function describeMessage(message) {
         `Internal Thunderbird error: message ${message.id} returned by ` +
         `API to extension is missing data and data is still missing after ` +
         `refetching message.`;
+      await errorEvent("describeMessage", msg);
       await registerAnomaly(msg);
       return `${message.id}`;
     }
@@ -230,6 +232,7 @@ async function describeMessage(message) {
       `API to extension was initially missing data, but data appeared ` +
       `after refetching: headerMessageId=${message.headerMessageId} ` +
       `subject=${message.subject} author=${message.author}`;
+    await errorEvent("describeMessage", msg);
     await registerAnomaly(msg);
   }
   return (
