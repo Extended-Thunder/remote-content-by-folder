@@ -304,9 +304,9 @@ async function flushEvents() {
       let date = timestamp.replace(/T.*/, "");
       if (eventLog[date]) eventLog[date] += msg;
       else eventLog[date] = msg;
-      if (eventLog.length > 2) {
+      let keys = Object.keys(eventLog);
+      if (keys.length > 2) {
         // Keep today and yesterday
-        let keys = Object.keys(eventLog);
         let old = keys.sort().slice(0, keys.length - 2);
         for (let date of old) delete eventLog[date];
       }
