@@ -471,11 +471,15 @@ async function scanAccount(account, scanRegexp, reason) {
         numSeen++;
         continue;
       }
-      setSeenRecently(folder, message, `${reason} scan`);
       numScanned += 1;
       if (await checkMessage(message, account)) {
         await debug(1, `Changed message in ${reason} scan`);
         numChanged++;
+        // If we didn't change the message, then it's probably a message that
+        // was moved from one folder to another by the user, and those don't
+        // and shouldn't generate notifications. Therefore, we only add a scan
+        // event if we changed the message.
+        setSeenRecently(folder, message, `${reason} scan`);
       }
       seen.add(message.id);
     }
