@@ -385,6 +385,8 @@ async function init() {
 
   window.addEventListener("online", (event) => triggerScan("online", 5000));
   messenger.messages.onNewMailReceived.addListener(checkNewMessages, true);
+  messenger.messages.onCopied.addListener(movedOrCopied);
+  messenger.messages.onMoved.addListener(movedOrCopied);
   messenger.notifications.onClicked.addListener(async (notificationId) => {
     if (notificationId != "rcbfAnomaly") return;
     let { lastAnomaly } = await messenger.storage.local.get({
@@ -571,8 +573,11 @@ async function checkSeenRecently() {
     // Don't check any messages until 60 seconds after the first time we saw
     // them. That should be more than enough time for any notifications to come
     // in!
-    // If the first event is a notification, there's nothing for us to do.
-    // If there was an initial scan, that's also fine.
+    // Do nothing if:
+    // * It already has a content policy -- probably moved or copied
+    // * The first event is a notification -- everything worked as intended
+    // * There was an initial scan -- that's also fine
+    // * The message was moved or copied -- these don't get notifications
     // If there are no notifications, that's an error and an anomaly.
     // Otherwise it's just an informational message.
     let cutoff = new Date().getTime() - 60000;
@@ -585,9 +590,15 @@ async function checkSeenRecently() {
       if (events[0].when.getTime() > cutoff) continue;
       expired.push(messageId);
 
+      if ((await browser.RemoteContent.getContentPolicy(message.id)) != "None")
+        // It's probably a moved message, so don't worry about it.
+        continue;
+
       if (events[0].what == "notification") continue;
 
       if (events.filter((elt) => elt.what == "initial scan").length) continue;
+
+      if (events.filter((elt) => elt.what == "moved").length) continue;
 
       let desc =
         `${await folderPath(null, folder)} ` +
@@ -662,6 +673,12 @@ async function checkNewMessages(folder, messages) {
 
   await triggerScan("NewMailReceived");
   await returnEvent("checkNewMessages");
+}
+
+async function movedOrCopied(originalMessages, newMessages) {
+  for await (let msg of getMessages(newMessages)) {
+    setSeenRecently(msg.folder, msg, "moved");
+  }
 }
 
 // account is specified when we are doing an account scan rather than
