@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@latest
 
       - name: Prettify code
-        uses: creyD/prettier_action@v4.3
+        uses: creyD/prettier_action@latest
         with:
           dry: True
           prettier_options: --check .
