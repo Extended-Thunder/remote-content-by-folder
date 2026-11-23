@@ -79,6 +79,10 @@ to block images in a message and puts up the banner, and then you tell it to
 display the images in that message, that will stick even if the message is in a
 folder that Remote Content By Folder thinks images should be blocked in.
 
+## Generative AI policy
+
+This project does not solicit or accept work produced with substantive assistance from generative AI. Only [hand-crafted code][hcc] is welcome here.
+
 ## Copyright
 
 Copyright 2024 Jonathan Kamens.
@@ -98,3 +102,4 @@ This Source Code Form is subject to the terms of the Mozilla Public License, v. 
 [Patreon]: https://www.patreon.com/c/jikseclecticofferings
 [Paypal]: https://paypal.me/JonathanKamens
 [Venmo]: https://venmo.com/Jonathan-Kamens
+[hcc]: https://handcraftedcode.org
