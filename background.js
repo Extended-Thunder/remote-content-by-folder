@@ -454,12 +454,10 @@ async function scanAccount(account, scanRegexp, reason) {
   await enterEvent("scanAccount", account.name, scanRegexp, reason);
 
   for (let folder of account.folders) {
-    if (
-      !(
-        (scanRegexp && scanRegexp.test(folder.name)) ||
-        folderIsInList(folder, scanFoldersNow)
-      )
-    )
+    if (!(
+      (scanRegexp && scanRegexp.test(folder.name)) ||
+      folderIsInList(folder, scanFoldersNow)
+    ))
       continue;
 
     let fqp = await folderPath(account, folder);
