@@ -368,6 +368,7 @@ async function errorEvent(func, ...args) {
 
 async function registerAnomaly(msg) {
   await messenger.storage.local.set({ lastAnomaly: new Date() });
+  if (!(await getPref(debugPref))) return;
   await messenger.notifications.create("rcbfAnomaly", {
     type: "basic",
     title: "Remote Content By Folder anomaly",
