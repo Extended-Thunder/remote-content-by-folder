@@ -588,7 +588,15 @@ async function checkSeenRecently() {
       if (events[0].when.getTime() > cutoff) continue;
       expired.push(messageId);
 
-      if ((await browser.RemoteContent.getContentPolicy(message.id)) != "None")
+      let contentPolicy = await browser.RemoteContent.getContentPolicy(
+        message.id,
+      );
+
+      if (contentPolicy === null)
+        // Message went away out from under us
+        continue;
+
+      if (contentPolicy != "None")
         // It's probably a moved message, so don't worry about it.
         continue;
 

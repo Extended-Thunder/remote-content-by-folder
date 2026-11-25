@@ -49,6 +49,7 @@ var RemoteContent = class extends ExtensionCommon.ExtensionAPI {
       RemoteContent: {
         getContentPolicy: function (messageId) {
           let realMessage = context.extension.messageManager.get(messageId);
+          if (!realMessage) return null;
           let policyId = realMessage.getUint32Property(contentPolicyProperty);
           let policy = policyMap.find((e) => e.id == policyId);
           if (!policy) {
